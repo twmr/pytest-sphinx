@@ -15,6 +15,10 @@ https://github.com/sphinx-doc/sphinx/blob/master/sphinx/ext/doctest.py
 ** TODO overwrite DocTestRunner.__run, since it passes the 'single' str to compile().
 
 
+* CLEANUP
+** use the sphinx directive parser from the sphinx project
+
+
 doctestoptions
 
 
@@ -24,7 +28,7 @@ doctestoptions
    print(2+2) # this will give output
 
 .. testoutput::
-   2
+   3
 
 """
 
@@ -66,7 +70,7 @@ def _is_doctest(config, path, parent):
     return False
 
 
-def docstring2test(docstring):
+def docstring2test(docstring, lineno):
     import re
     import enum
     import itertools
@@ -90,7 +94,7 @@ def docstring2test(docstring):
             self.examples = examples
             self.globs = {}
             self.name = 'mytest'
-            self.lineno = -500  # FIXME
+            self.lineno = lineno
             self.filename = 'dummyfilename'
             self.docstring = docstring
 
@@ -103,21 +107,20 @@ def docstring2test(docstring):
 
     matches.append(len(lines))
 
-
-    def is_empty_of_indented(line):
-        return not line or line.startswith('   ')
-
-
     class Section:
-        def __init__(self, name, content):
+        def __init__(self, name, content, lineno):
             self.name = name
-            if name == DoctestDirectives.CODE:
+            self.lineno = lineno
+            if name in (DoctestDirectives.CODE, DoctestDirectives.OUTPUT):
                 # remove empty lines
                 filtered = filter(lambda x: not re.match(r'^\s*$', x),
                                   content.splitlines())
                 self.content = '\n'.join(filtered)
             else:
                 self.content = content
+
+    def is_empty_of_indented(line):
+        return not line or line.startswith('   ')
 
     sections = []
     for x, y in pairwise(matches):
@@ -129,22 +132,20 @@ def docstring2test(docstring):
             is_empty_of_indented, section[1:]))
         sections.append(Section(
             directive,
-            textwrap.dedent(out)))
-
-    class Example(object):
-        def __init__(self, want, source):
-            self.lineno = 0
-            self.options = {}
-            self.want = want
-            self.source = source
-
+            textwrap.dedent(out),
+            lineno=x))
 
     examples = []
     for x, y in pairwise(sections):
+        # TODO support DoctestDirectives.SETUP, ...
         if (x.name == DoctestDirectives.CODE and
                 y.name == DoctestDirectives.OUTPUT):
             examples.append(
-                Example(source=x.content, want=y.content))
+                doctest.Example(source=x.content, want=y.content,
+                                # we want to see the ..testcode lines in the
+                                # console output but not the ..testoutput
+                                # lines
+                                lineno=y.lineno - 1))
 
     return Test(examples)
 
@@ -153,7 +154,6 @@ class SphinxDocTestRunner(doctest.DebugRunner):
     """
     overwrite doctest.DocTestRunner.__run, since it uses 'single' for the
     `compile` function instead of
-
     """
     def __run(self, test, compileflags, out):
         """
@@ -298,14 +298,14 @@ class SphinxDoctestModule(pytest.Module):
             def get_doctest(self, docstring, globs, name, filename, lineno):
                 # todo create objects for each sphinx collective
                 print(filename, lineno)
-                return docstring
+                return docstring, lineno
 
         finder = doctest.DocTestFinder(parser=SphinxDocTestParser())
         # optionflags = get_optionflags(self)
         runner = SphinxDocTestRunner(verbose=0)
 
-        for docstring in finder.find(module, module.__name__):
-            test = docstring2test(docstring)
+        for docstring, lineno in finder.find(module, module.__name__):
+            test = docstring2test(docstring, lineno)
             if test.examples:
                 yield _pytest.doctest.DoctestItem(
                     test.name, self, runner, test)

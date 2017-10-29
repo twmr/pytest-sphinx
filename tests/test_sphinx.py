@@ -1,64 +1,142 @@
 # -*- coding: utf-8 -*-
+import textwrap
 
 
-def test_bar_fixture(testdir):
-    """Make sure that pytest accepts our fixture."""
+def test_syntax_error_in_module_doctest(testdir):
 
-    # create a temporary pytest test module
-    testdir.makepyfile("""
-        def test_sth(bar):
-            assert bar == "europython2015"
-    """)
+    testdir.makepyfile(textwrap.dedent("""
+        '''
+        .. testcode::
 
-    # run pytest with the following cmd args
-    result = testdir.runpytest(
-        '--foo=europython2015',
-        '-v'
-    )
+            3+
 
-    # fnmatch_lines does an assertion internally
+        .. testoutput::
+
+            3
+        '''
+    """))
+
+    result = testdir.runpytest('--doctest-modules')
     result.stdout.fnmatch_lines([
-        '*::test_sth PASSED',
-    ])
-
-    # make sure that that we get a '0' exit code for the testsuite
-    assert result.ret == 0
+        "UNEXPECTED EXCEPTION: SyntaxError('invalid syntax',*"])
 
 
-def test_help_message(testdir):
-    result = testdir.runpytest(
-        '--help',
-    )
-    # fnmatch_lines does an assertion internally
+def test_failing_module_doctest(testdir):
+
+    testdir.makepyfile(textwrap.dedent("""
+        '''
+        .. testcode::
+
+            print(2+5)
+
+        .. testoutput::
+
+            3
+        '''
+    """))
+
+    result = testdir.runpytest('--doctest-modules')
+    assert 'FAILURES' in result.stdout.str()
     result.stdout.fnmatch_lines([
-        'sphinx:',
-        '*--foo=DEST_FOO*Set the value for the fixture "bar".',
-    ])
+        '002*testcode::*',
+        '004*print(2+5)*',
+        '*=== 1 failed in *'])
 
 
-def test_hello_ini_setting(testdir):
-    testdir.makeini("""
-        [pytest]
-        HELLO = world
-    """)
+def test_failing_function_doctest(testdir):
+    testdir.makepyfile(textwrap.dedent("""
+        # simple comment
+        GLOBAL_VAR = True
 
-    testdir.makepyfile("""
-        import pytest
+        def func():
+            '''
+            .. testcode::
 
-        @pytest.fixture
-        def hello(request):
-            return request.config.getini('HELLO')
+                print(2+5)
 
-        def test_hello_world(hello):
-            assert hello == 'world'
-    """)
+            .. testoutput::
 
-    result = testdir.runpytest('-v')
+                3
+            '''
+    """))
 
-    # fnmatch_lines does an assertion internally
+    result = testdir.runpytest('--doctest-modules')
+    assert 'FAILURES' in result.stdout.str()
+    assert 'GLOBAL_VAR' not in result.stdout.str()
     result.stdout.fnmatch_lines([
-        '*::test_hello_world PASSED',
-    ])
+        '006*testcode::*',
+        '008*print(2+5)*',
+        '*=== 1 failed in *'])
 
-    # make sure that that we get a '0' exit code for the testsuite
-    assert result.ret == 0
+
+def test_working_module_doctest(testdir):
+
+    testdir.makepyfile(textwrap.dedent("""
+        '''
+        .. testcode::
+
+            print(2+5)
+
+        .. testoutput::
+
+            7
+        '''
+    """))
+
+    result = testdir.runpytest('--doctest-modules')
+    result.stdout.fnmatch_lines([
+        '*=== 1 passed in *'])
+
+
+def test_working_function_doctest(testdir):
+    testdir.makepyfile(textwrap.dedent("""
+        # simple comment
+        GLOBAL_VAR = True
+
+        def func():
+            '''
+            .. testcode::
+
+                print(2+5)
+
+            .. testoutput::
+
+                7
+            '''
+    """))
+
+    result = testdir.runpytest('--doctest-modules')
+    result.stdout.fnmatch_lines([
+        '*=== 1 passed in *'])
+
+
+def test_working_module_doctest_nospaces(testdir):
+
+    testdir.makepyfile(textwrap.dedent("""
+        '''
+        .. testcode::
+            print(2+5)
+
+        .. testoutput::
+            7
+        '''
+    """))
+
+    result = testdir.runpytest('--doctest-modules')
+    result.stdout.fnmatch_lines([
+        '*=== 1 passed in *'])
+
+
+
+# testdir.makepyfile("""
+#     '''
+#     this is some text
+
+#     >>> None
+#     >>> print(2+5)
+#     3
+#     >>> print(2+7)
+#     4
+
+#     '''
+# """)
