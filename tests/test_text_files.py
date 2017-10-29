@@ -26,7 +26,7 @@ def test_collect_testtextfile(testdir):
                           pytest_sphinx.SphinxDoctestTextfile)
     # Empty file has no items.
     items, reprec = testdir.inline_genitems(w)
-    assert len(items) == 0
+    assert not items
 
 
 def test_successful_doctest_in_text_file(testdir):
@@ -42,7 +42,7 @@ def test_successful_doctest_in_text_file(testdir):
     """)
 
     result = testdir.runpytest('--doctest-modules')
-    # assert 'testcode' not in result.stdout.str()
+    assert 'testcode' not in result.stdout.str()
     result.stdout.fnmatch_lines([
         '*=== 1 passed in *'])
 
