@@ -5,7 +5,7 @@ https://github.com/sphinx-doc/sphinx/blob/master/sphinx/ext/doctest.py
 
 * TODO
 ** CLEANUP: use the sphinx directive parser from the sphinx project
-** support for :options: see sphinx-doc
+** support for :options: in testoutput (see sphinx-doc)
 
 
 .. testcode::
@@ -48,7 +48,7 @@ class SphinxDoctest:
                  filename='<sphinx-doctest>'):
         self.examples = examples
         self.globs = {}
-        self.name = 'mytest'  # TODO
+        self.name = None
         self.lineno = None
         self.filename = filename
         self.docstring = docstring
@@ -265,7 +265,11 @@ class SphinxDocTestRunner(doctest.DebugRunner):
 class SphinxDocTestParser:
     def get_doctest(self, docstring, globs, name, filename, lineno):
         # TODO document why we need to overwrite? get_doctest
-        return docstring, lineno
+        test = docstring2test(docstring)
+        test.name = name
+        test.lineno = lineno
+        test.filename = filename
+        return test
 
 
 class SphinxDoctestTextfile(pytest.Module):
@@ -281,7 +285,9 @@ class SphinxDoctestTextfile(pytest.Module):
 
         runner = SphinxDocTestRunner(verbose=0)
         test = docstring2test(text)
+        test.name = name
         test.lineno = 0
+
         if test.examples:
             yield _pytest.doctest.DoctestItem(
                 test.name, self, runner, test)
@@ -301,12 +307,9 @@ class SphinxDoctestModule(pytest.Module):
                     raise
 
         finder = doctest.DocTestFinder(parser=SphinxDocTestParser())
-        # optionflags = get_optionflags(self)
         runner = SphinxDocTestRunner(verbose=0)
 
-        for docstring, lineno in finder.find(module, module.__name__):
-            test = docstring2test(docstring)
-            test.lineno = lineno
+        for test in finder.find(module, module.__name__):
             if test.examples:
                 yield _pytest.doctest.DoctestItem(
                     test.name, self, runner, test)
