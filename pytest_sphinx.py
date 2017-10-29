@@ -1,25 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-
 http://www.sphinx-doc.org/en/stable/ext/doctest.html
 https://github.com/sphinx-doc/sphinx/blob/master/sphinx/ext/doctest.py
 
 * TODO
-** find all docstrings in python files
-** search for sphinx directives in the docstrings
-** create Example objects which contain the source, expected output, setup code, cleanup_code
-** create a custom Example class, which only has methods, which are needed by the runner object.
-*** DocTestRunner(verbose=False)
-*** the example class needs the following attrs
-*** want, source, lineno (zero indexed) - hardcode it to zero, set 'options' to {}
-** TODO overwrite DocTestRunner.__run, since it passes the 'single' str to compile().
-
-
-* CLEANUP
-** use the sphinx directive parser from the sphinx project
-
-
-doctestoptions
+** CLEANUP: use the sphinx directive parser from the sphinx project
+** support for :options: see sphinx-doc
 
 
 .. testcode::
@@ -28,13 +14,33 @@ doctestoptions
    print(2+2) # this will give output
 
 .. testoutput::
-   3
 
+   3
 """
 
 import doctest
+import enum
+import itertools
+import re
+import textwrap
+
 import _pytest.doctest
 import pytest
+
+
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = itertools.tee(iterable)
+    next(b, None)
+    return itertools.izip(a, b)
+
+
+class DoctestDirectives(enum.Enum):
+    TESTCODE = 1
+    TESTOUTPUT = 2
+    TESTSETUP = 3
+    TESTCLEANUP = 4
+    DOCTEST = 5
 
 
 def pytest_addoption(parser):
@@ -44,7 +50,7 @@ def pytest_addoption(parser):
         action='store',
         dest='dest_foo',
         default='2017',
-        help='Set # TODO:he value for the fixture "bar".'
+        help='Set the value for the fixture "bar".'
     )
 
     parser.addini('HELLO', 'Dummy pytest.ini setting')
@@ -71,25 +77,7 @@ def _is_doctest(config, path, parent):
 
 
 def docstring2test(docstring, lineno):
-    import re
-    import enum
-    import itertools
-    import textwrap
-
-
-    def pairwise(iterable):
-        "s -> (s0,s1), (s1,s2), (s2, s3), ..."
-        a, b = itertools.tee(iterable)
-        next(b, None)
-        return itertools.izip(a, b)
-
-    class DoctestDirectives(enum.Enum):
-        CODE = 1
-        OUTPUT = 2
-        SETUP = 3
-        CLEANUP = 4
-
-    class Test(object):
+    class SphinxDoctest(object):
         def __init__(self, examples):
             self.examples = examples
             self.globs = {}
@@ -100,10 +88,10 @@ def docstring2test(docstring, lineno):
 
     lines = textwrap.dedent(docstring).splitlines()
     matches = [i for i, line in enumerate(lines) if
-               any(line.startswith('.. test' + d.name.lower() + '::')
+               any(line.startswith('.. ' + d.name.lower() + '::')
                    for d in DoctestDirectives)]
     if not matches:
-        return Test([])
+        return SphinxDoctest([])
 
     matches.append(len(lines))
 
@@ -111,7 +99,8 @@ def docstring2test(docstring, lineno):
         def __init__(self, name, content, lineno):
             self.name = name
             self.lineno = lineno
-            if name in (DoctestDirectives.CODE, DoctestDirectives.OUTPUT):
+            if name in (DoctestDirectives.TESTCODE,
+                        DoctestDirectives.TESTOUTPUT):
                 # remove empty lines
                 filtered = filter(lambda x: not re.match(r'^\s*$', x),
                                   content.splitlines())
@@ -127,7 +116,7 @@ def docstring2test(docstring, lineno):
         section = lines[x:y]
         header = section[0]
         directive = next(d for d in DoctestDirectives
-                         if 'test' + d.name.lower() in header)
+                         if d.name.lower() in header)
         out = '\n'.join(itertools.takewhile(
             is_empty_of_indented, section[1:]))
         sections.append(Section(
@@ -137,9 +126,9 @@ def docstring2test(docstring, lineno):
 
     examples = []
     for x, y in pairwise(sections):
-        # TODO support DoctestDirectives.SETUP, ...
-        if (x.name == DoctestDirectives.CODE and
-                y.name == DoctestDirectives.OUTPUT):
+        # TODO support DoctestDirectives.TESTSETUP, ...
+        if (x.name == DoctestDirectives.TESTCODE and
+                y.name == DoctestDirectives.TESTOUTPUT):
             examples.append(
                 doctest.Example(source=x.content, want=y.content,
                                 # we want to see the ..testcode lines in the
@@ -147,7 +136,7 @@ def docstring2test(docstring, lineno):
                                 # lines
                                 lineno=y.lineno - 1))
 
-    return Test(examples)
+    return SphinxDoctest(examples)
 
 
 class SphinxDocTestRunner(doctest.DebugRunner):
