@@ -43,27 +43,24 @@ class DoctestDirectives(enum.Enum):
     DOCTEST = 5
 
 
-def pytest_addoption(parser):
-    group = parser.getgroup('sphinx')
-    group.addoption(
-        '--foo',
-        action='store',
-        dest='dest_foo',
-        default='2017',
-        help='Set the value for the fixture "bar".'
-    )
-
-    parser.addini('HELLO', 'Dummy pytest.ini setting')
+class SphinxDoctest:
+    def __init__(self, examples, docstring,
+                 filename='<sphinx-doctest>'):
+        self.examples = examples
+        self.globs = {}
+        self.name = 'mytest'  # TODO
+        self.lineno = None
+        self.filename = filename
+        self.docstring = docstring
 
 
 def pytest_collect_file(path, parent):
     config = parent.config
-    # print(path)
     if path.ext == ".py":
         if config.option.doctestmodules:
             return SphinxDoctestModule(path, parent)
-    # elif _is_doctest(config, path, parent):
-    #     return DoctestTextfile(path, parent)
+    elif _is_doctest(config, path, parent):
+        return SphinxDoctestTextfile(path, parent)
 
 
 def _is_doctest(config, path, parent):
@@ -76,22 +73,17 @@ def _is_doctest(config, path, parent):
     return False
 
 
-def docstring2test(docstring, lineno):
-    class SphinxDoctest(object):
-        def __init__(self, examples):
-            self.examples = examples
-            self.globs = {}
-            self.name = 'mytest'
-            self.lineno = lineno
-            self.filename = 'dummyfilename'
-            self.docstring = docstring
-
+def docstring2test(docstring):
+    """
+    Parse all sphinx test directives in the docstring and create a
+    SphinxDoctest object.
+    """
     lines = textwrap.dedent(docstring).splitlines()
     matches = [i for i, line in enumerate(lines) if
                any(line.startswith('.. ' + d.name.lower() + '::')
                    for d in DoctestDirectives)]
     if not matches:
-        return SphinxDoctest([])
+        return SphinxDoctest([], docstring)
 
     matches.append(len(lines))
 
@@ -136,13 +128,13 @@ def docstring2test(docstring, lineno):
                                 # lines
                                 lineno=y.lineno - 1))
 
-    return SphinxDoctest(examples)
+    return SphinxDoctest(examples, docstring)
 
 
 class SphinxDocTestRunner(doctest.DebugRunner):
     """
     overwrite doctest.DocTestRunner.__run, since it uses 'single' for the
-    `compile` function instead of
+    `compile` function instead of 'exec'.
     """
     def __run(self, test, compileflags, out):
         """
@@ -161,7 +153,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
         # to modify them).
         original_optionflags = self.optionflags
 
-        SUCCESS, FAILURE, BOOM = range(3) # `outcome` state
+        SUCCESS, FAILURE, BOOM = range(3)  # `outcome` state
 
         check = self._checker.check_output
 
@@ -270,6 +262,31 @@ class SphinxDocTestRunner(doctest.DebugRunner):
         return doctest.TestResults(failures, tries)
 
 
+class SphinxDocTestParser:
+    def get_doctest(self, docstring, globs, name, filename, lineno):
+        # TODO document why we need to overwrite? get_doctest
+        return docstring, lineno
+
+
+class SphinxDoctestTextfile(pytest.Module):
+    obj = None
+
+    def collect(self):
+        # inspired by doctest.testfile; ideally we would use it directly,
+        # but it doesn't support passing a custom checker
+        encoding = self.config.getini("doctest_encoding")
+        text = self.fspath.read_text(encoding)
+        filename = str(self.fspath)
+        name = self.fspath.basename
+
+        runner = SphinxDocTestRunner(verbose=0)
+        test = docstring2test(text)
+        test.lineno = 0
+        if test.examples:
+            yield _pytest.doctest.DoctestItem(
+                test.name, self, runner, test)
+
+
 class SphinxDoctestModule(pytest.Module):
     def collect(self):
         if self.fspath.basename == "conftest.py":
@@ -283,18 +300,13 @@ class SphinxDoctestModule(pytest.Module):
                 else:
                     raise
 
-        class SphinxDocTestParser:
-            def get_doctest(self, docstring, globs, name, filename, lineno):
-                # todo create objects for each sphinx collective
-                print(filename, lineno)
-                return docstring, lineno
-
         finder = doctest.DocTestFinder(parser=SphinxDocTestParser())
         # optionflags = get_optionflags(self)
         runner = SphinxDocTestRunner(verbose=0)
 
         for docstring, lineno in finder.find(module, module.__name__):
-            test = docstring2test(docstring, lineno)
+            test = docstring2test(docstring)
+            test.lineno = lineno
             if test.examples:
                 yield _pytest.doctest.DoctestItem(
                     test.name, self, runner, test)
