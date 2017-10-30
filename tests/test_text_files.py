@@ -1,5 +1,3 @@
-import doctest
-
 import _pytest.doctest
 import pytest_sphinx
 
@@ -30,7 +28,7 @@ def test_collect_testtextfile(testdir):
 
 
 def test_successful_doctest_in_text_file(testdir):
-    checkfile = testdir.maketxtfile(test_something="""
+    testdir.maketxtfile(test_something="""
         alskdjalsdk
         .. testcode::
 
@@ -48,7 +46,7 @@ def test_successful_doctest_in_text_file(testdir):
 
 
 def test_failing_doctest_in_text_file(testdir):
-    checkfile = testdir.maketxtfile(test_something="""
+    testdir.maketxtfile(test_something="""
         alskdjalsdk
         .. testcode::
 

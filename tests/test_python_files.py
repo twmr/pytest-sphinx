@@ -125,18 +125,3 @@ def test_working_module_doctest_nospaces(testdir):
     result = testdir.runpytest('--doctest-modules')
     result.stdout.fnmatch_lines([
         '*=== 1 passed in *'])
-
-
-
-# testdir.makepyfile("""
-#     '''
-#     this is some text
-
-#     >>> None
-#     >>> print(2+5)
-#     3
-#     >>> print(2+7)
-#     4
-
-#     '''
-# """)

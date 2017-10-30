@@ -23,6 +23,8 @@ import enum
 import itertools
 import re
 import textwrap
+import traceback
+import sys
 
 import _pytest.doctest
 import pytest
@@ -162,7 +164,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
 
             # If REPORT_ONLY_FIRST_FAILURE is set, then suppress
             # reporting after the first failure.
-            quiet = (self.optionflags & REPORT_ONLY_FIRST_FAILURE and
+            quiet = (self.optionflags & doctest.REPORT_ONLY_FIRST_FAILURE and
                      failures > 0)
 
             # Merge in the example's options.
@@ -175,7 +177,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
                         self.optionflags &= ~optionflag
 
             # If 'SKIP' is set, then skip this example.
-            if self.optionflags & SKIP:
+            if self.optionflags & doctest.SKIP:
                 continue
 
             # Record that we started this example.
@@ -199,7 +201,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
                 exception = None
             except KeyboardInterrupt:
                 raise
-            except:
+            except Exception:
                 exception = sys.exc_info()
                 self.debugger.set_continue()  # ==== Example Finished ====
 
@@ -217,7 +219,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
             else:
                 exc_msg = traceback.format_exception_only(*exception[:2])[-1]
                 if not quiet:
-                    got += _exception_traceback(exception)
+                    got += doctest._exception_traceback(exception)
 
                 # If `example.exc_msg` is None, then we weren't expecting
                 # an exception.
@@ -229,9 +231,9 @@ class SphinxDocTestRunner(doctest.DebugRunner):
                     outcome = SUCCESS
 
                 # Another chance if they didn't care about the detail.
-                elif self.optionflags & IGNORE_EXCEPTION_DETAIL:
-                    if check(_strip_exception_details(example.exc_msg),
-                             _strip_exception_details(exc_msg),
+                elif self.optionflags & doctest.IGNORE_EXCEPTION_DETAIL:
+                    if check(doctest._strip_exception_details(example.exc_msg),
+                             doctest._strip_exception_details(exc_msg),
                              self.optionflags):
                         outcome = SUCCESS
 
@@ -251,7 +253,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
             else:
                 assert False, ("unknown outcome", outcome)
 
-            if failures and self.optionflags & FAIL_FAST:
+            if failures and self.optionflags & doctest.FAIL_FAST:
                 break
 
         # Restore the option flags (in case they were modified)
@@ -280,7 +282,6 @@ class SphinxDoctestTextfile(pytest.Module):
         # but it doesn't support passing a custom checker
         encoding = self.config.getini("doctest_encoding")
         text = self.fspath.read_text(encoding)
-        filename = str(self.fspath)
         name = self.fspath.basename
 
         runner = SphinxDocTestRunner(verbose=0)
