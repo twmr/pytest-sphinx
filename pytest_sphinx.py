@@ -6,16 +6,6 @@ https://github.com/sphinx-doc/sphinx/blob/master/sphinx/ext/doctest.py
 * TODO
 ** CLEANUP: use the sphinx directive parser from the sphinx project
 ** support for :options: in testoutput (see sphinx-doc)
-
-
-.. testcode::
-
-   1+1        # this will give no output!
-   print(2+2) # this will give output
-
-.. testoutput::
-
-   3
 """
 
 import doctest
