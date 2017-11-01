@@ -27,7 +27,7 @@ def pairwise(iterable):
     return list(zip(a, b))
 
 
-class DoctestDirectives(enum.Enum):
+class SphinxDoctestDirectives(enum.Enum):
     TESTCODE = 1
     TESTOUTPUT = 2
     TESTSETUP = 3
@@ -73,7 +73,7 @@ def docstring2test(docstring):
     lines = textwrap.dedent(docstring).splitlines()
     matches = [i for i, line in enumerate(lines) if
                any(line.startswith('.. ' + d.name.lower() + '::')
-                   for d in DoctestDirectives)]
+                   for d in SphinxDoctestDirectives)]
     if not matches:
         return SphinxDoctest([], docstring)
 
@@ -83,8 +83,8 @@ def docstring2test(docstring):
         def __init__(self, name, content, lineno):
             self.name = name
             self.lineno = lineno
-            if name in (DoctestDirectives.TESTCODE,
-                        DoctestDirectives.TESTOUTPUT):
+            if name in (SphinxDoctestDirectives.TESTCODE,
+                        SphinxDoctestDirectives.TESTOUTPUT):
                 # remove empty lines
                 filtered = filter(lambda x: not re.match(r'^\s*$', x),
                                   content.splitlines())
@@ -99,7 +99,7 @@ def docstring2test(docstring):
     for x, y in pairwise(matches):
         section = lines[x:y]
         header = section[0]
-        directive = next(d for d in DoctestDirectives
+        directive = next(d for d in SphinxDoctestDirectives
                          if d.name.lower() in header)
         out = '\n'.join(itertools.takewhile(
             is_empty_of_indented, section[1:]))
@@ -110,9 +110,9 @@ def docstring2test(docstring):
 
     examples = []
     for x, y in pairwise(sections):
-        # TODO support DoctestDirectives.TESTSETUP, ...
-        if (x.name == DoctestDirectives.TESTCODE and
-                y.name == DoctestDirectives.TESTOUTPUT):
+        # TODO support SphinxDoctestDirectives.TESTSETUP, ...
+        if (x.name == SphinxDoctestDirectives.TESTCODE and
+                y.name == SphinxDoctestDirectives.TESTOUTPUT):
             examples.append(
                 doctest.Example(source=x.content, want=y.content,
                                 # we want to see the ..testcode lines in the
