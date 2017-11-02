@@ -13,14 +13,15 @@ def read(fname):
 
 setup(
     name='pytest-sphinx',
-    version='0.1.0',
+    version='0.1.1',
     author='Thomas Hisch',
     author_email='t.hisch@gmail.com',
     maintainer='Thomas Hisch',
     maintainer_email='t.hisch@gmail.com',
     license='BSD-3',
     url='https://github.com/thisch/pytest-sphinx',
-    description='A simple plugin to use with Pytest',
+    description=('Doctest plugin for pytest with support for '
+                 'Sphinx-specific doctest-directives'),
     long_description=read('README.rst'),
     py_modules=['pytest_sphinx'],
     install_requires=['pytest>=3.1.1'],
