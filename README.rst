@@ -10,7 +10,9 @@ pytest-sphinx
     :target: https://ci.appveyor.com/project/thisch/pytest-sphinx/branch/master
     :alt: See Build Status on AppVeyor
 
-A simple plugin to use with Pytest
+A doctest plugin for pytest, which understands the sphinx-specific
+directives from `doctest-sphinx`_. Those sphinx-specific directives can be
+used in rst files as well as in docstrings of python modules.
 
 ----
 
@@ -20,13 +22,15 @@ This `Pytest`_ plugin was generated with `Cookiecutter`_ along with `@hackebrot`
 Features
 --------
 
-* TODO
+* support for `testcode` and `testoutput` directives
+* support for `testsetup` and `testcleanup` is planned (pull-requests welcome)
 
 
 Requirements
 ------------
 
-* TODO
+* pytest
+* enum34 (for python2.7)
 
 
 Installation
@@ -40,12 +44,15 @@ You can install "pytest-sphinx" via `pip`_ from `PyPI`_::
 Usage
 -----
 
-* TODO
+* See `doctest-sphinx`_.
+* Run pytest with the `--doctest-modules` flag.
+
 
 Contributing
 ------------
 Contributions are very welcome. Tests can be run with `tox`_, please ensure
 the coverage at least stays the same before you submit a pull request.
+
 
 License
 -------
@@ -58,6 +65,7 @@ Issues
 
 If you encounter any problems, please `file an issue`_ along with a detailed description.
 
+.. _`doctest-sphinx`: http://www.sphinx-doc.org/en/stable/ext/doctest.html
 .. _`Cookiecutter`: https://github.com/audreyr/cookiecutter
 .. _`@hackebrot`: https://github.com/hackebrot
 .. _`MIT`: http://opensource.org/licenses/MIT
