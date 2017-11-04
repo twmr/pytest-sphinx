@@ -13,7 +13,7 @@ def read(fname):
 
 setup(
     name='pytest-sphinx',
-    version='0.1.1',
+    version='0.1.2',
     author='Thomas Hisch',
     author_email='t.hisch@gmail.com',
     maintainer='Thomas Hisch',
