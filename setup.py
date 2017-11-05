@@ -24,7 +24,9 @@ setup(
                  'Sphinx-specific doctest-directives'),
     long_description=read('README.rst'),
     py_modules=['pytest_sphinx'],
-    install_requires=['pytest>=3.1.1'],
+    install_requires=[
+        'enum34;python_version<"3.4"',
+        'pytest>=3.1.1'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Framework :: Pytest',
