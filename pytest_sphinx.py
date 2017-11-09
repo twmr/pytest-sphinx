@@ -70,6 +70,8 @@ def docstring2test(docstring):
     Parse all sphinx test directives in the docstring and create a
     SphinxDoctest object.
     """
+    # TODO subclass doctest.DocTestParser instead?
+
     lines = textwrap.dedent(docstring).splitlines()
     matches = [i for i, line in enumerate(lines) if
                any(line.startswith('.. ' + d.name.lower() + '::')
@@ -113,8 +115,17 @@ def docstring2test(docstring):
         # TODO support SphinxDoctestDirectives.TESTSETUP, ...
         if (x.name == SphinxDoctestDirectives.TESTCODE and
                 y.name == SphinxDoctestDirectives.TESTOUTPUT):
+
+            want = y.content
+            m = doctest.DocTestParser._EXCEPTION_RE.match(want)
+            if m:
+                exc_msg = m.group('msg')
+            else:
+                exc_msg = None
+
             examples.append(
-                doctest.Example(source=x.content, want=y.content,
+                doctest.Example(source=x.content, want=want,
+                                exc_msg=exc_msg,
                                 # we want to see the ..testcode lines in the
                                 # console output but not the ..testoutput
                                 # lines

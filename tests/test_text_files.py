@@ -63,3 +63,21 @@ def test_failing_doctest_in_text_file(testdir):
         '002*testcode::*',
         '004*print(2+3)*',
         '*=== 1 failed in *'])
+
+
+def test_expected_exception_doctest(testdir):
+    testdir.maketxtfile(test_something="""
+        .. testcode::
+
+            1/0
+
+        .. testoutput::
+
+            Traceback (most recent call last):
+              ...
+            ZeroDivisionError: integer division or modulo by zero
+    """)
+
+    result = testdir.runpytest('--doctest-modules')
+    result.stdout.fnmatch_lines([
+        '*=== 1 passed in *'])
