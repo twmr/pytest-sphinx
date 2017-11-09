@@ -13,8 +13,6 @@ import enum
 import itertools
 import re
 import textwrap
-import traceback
-import sys
 
 import _pytest.doctest
 import pytest
