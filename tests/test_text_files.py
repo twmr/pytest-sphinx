@@ -1,6 +1,7 @@
 import sys
 import platform
 
+import pytest
 import _pytest.doctest
 import pytest_sphinx
 
@@ -28,6 +29,25 @@ def test_collect_testtextfile(testdir):
     # Empty file has no items.
     items, reprec = testdir.inline_genitems(w)
     assert not items
+
+
+def test_successful_multiline_doctest_in_text_file(testdir):
+    testdir.maketxtfile(test_something="""
+        .. testcode::
+
+            print(1+1)
+            print(2+3)
+
+        .. testoutput::
+
+            2
+            5
+    """)
+
+    result = testdir.runpytest('--doctest-modules')
+    result.stdout.fnmatch_lines([
+        '*=== 1 passed in *'])
+
 
 
 def test_successful_doctest_in_text_file(testdir):

@@ -13,6 +13,8 @@ import enum
 import itertools
 import re
 import textwrap
+import sys
+import traceback
 
 import _pytest.doctest
 import pytest
@@ -137,7 +139,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
     overwrite doctest.DocTestRunner.__run, since it uses 'single' for the
     `compile` function instead of 'exec'.
     """
-    def __run(self, test, compileflags, out):
+    def _DocTestRunner__run(self, test, compileflags, out):
         """
         Run the examples in `test`.  Write the outcome of each example
         with one of the `DocTestRunner.report_*` methods, using the
@@ -259,7 +261,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
         self.optionflags = original_optionflags
 
         # Record and return the number of failures and tries.
-        self.__record_outcome(test, failures, tries)
+        self._DocTestRunner__record_outcome(test, failures, tries)
         return doctest.TestResults(failures, tries)
 
 
