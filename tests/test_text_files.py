@@ -1,3 +1,5 @@
+import sys
+
 import _pytest.doctest
 import pytest_sphinx
 
@@ -66,6 +68,11 @@ def test_failing_doctest_in_text_file(testdir):
 
 
 def test_expected_exception_doctest(testdir):
+    if sys.version_info.major < 3:
+        exception_msg = 'integer division or modulo by zero'
+    else:
+        exception_msg = 'division by zero'
+
     testdir.maketxtfile(test_something="""
         .. testcode::
 
@@ -75,8 +82,9 @@ def test_expected_exception_doctest(testdir):
 
             Traceback (most recent call last):
               ...
-            ZeroDivisionError: integer division or modulo by zero
-    """)
+            ZeroDivisionError: {}
+    """.format(exception_msg)
+    )
 
     result = testdir.runpytest('--doctest-modules')
     result.stdout.fnmatch_lines([
