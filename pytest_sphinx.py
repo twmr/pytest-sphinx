@@ -65,6 +65,46 @@ def _is_doctest(config, path, parent):
     return False
 
 
+# This regular expression looks for option directives in the expected output
+# (testoutput) code of an example.  Option directives are comments starting
+# with ":options:".
+_OPTION_DIRECTIVE_RE = re.compile(r':options:\s*([^\n\'"]*)$',
+                                  re.MULTILINE)
+
+
+# In order to compare the testoutput, containing Option directives we have
+# to remove the optiondirectives from the string after parsing.
+_OPTION_DIRECTIVE_RE_SUB = (
+    re.compile(r':options:\s*([^\n\'"]*)\n').sub)
+
+
+def _find_options(want, name, lineno):
+    """
+    Return a dictionary containing option overrides extracted from
+    option directives in the given `want` string.
+
+    `name` is the string's name, and `lineno` is the line number
+    where the example starts; both are used for error messages.
+    """
+    options = {}
+    # (note: with the current regexp, this will match at most once:)
+    for m in _OPTION_DIRECTIVE_RE.finditer(want):
+        option_strings = m.group(1).replace(',', ' ').split()
+        for option in option_strings:
+            if (option[0] not in '+-' or
+                    option[1:] not in doctest.OPTIONFLAGS_BY_NAME):
+                raise ValueError('line %r of the doctest for %s '
+                                 'has an invalid option: %r' %
+                                 (lineno + 1, name, option))
+            flag = doctest.OPTIONFLAGS_BY_NAME[option[1:]]
+            options[flag] = (option[0] == '+')
+    if options and doctest.DocTestParser._IS_BLANK_OR_COMMENT(want):
+        raise ValueError('line %r of the doctest for %s has an option '
+                         'directive on a line with no example: %r' %
+                         (lineno, name, want))
+    return options
+
+
 def docstring2test(docstring):
     """
     Parse all sphinx test directives in the docstring and create a
@@ -123,13 +163,21 @@ def docstring2test(docstring):
             else:
                 exc_msg = None
 
+            options = _find_options(want, 'dummy', y.lineno)
+
+            # where should the :options: string be removed?
+            # (only in the OutputChecker?, but then it is visible in the
+            # pytest output in the "EXPECTED" section....
+            want = _OPTION_DIRECTIVE_RE_SUB('', want)
+
             examples.append(
                 doctest.Example(source=x.content, want=want,
                                 exc_msg=exc_msg,
                                 # we want to see the ..testcode lines in the
                                 # console output but not the ..testoutput
                                 # lines
-                                lineno=y.lineno - 1))
+                                lineno=y.lineno - 1,
+                                options=options))
 
     return SphinxDoctest(examples, docstring)
 
@@ -285,7 +333,9 @@ class SphinxDoctestTextfile(pytest.Module):
         text = self.fspath.read_text(encoding)
         name = self.fspath.basename
 
-        runner = SphinxDocTestRunner(verbose=0)
+        runner = SphinxDocTestRunner(verbose=0,
+                                     checker=_pytest.doctest._get_checker())
+
         test = docstring2test(text)
         test.name = name
         test.lineno = 0
@@ -309,7 +359,8 @@ class SphinxDoctestModule(pytest.Module):
                     raise
 
         finder = doctest.DocTestFinder(parser=SphinxDocTestParser())
-        runner = SphinxDocTestRunner(verbose=0)
+        runner = SphinxDocTestRunner(verbose=0,
+                                     checker=_pytest.doctest._get_checker())
 
         for test in finder.find(module, module.__name__):
             if test.examples:
