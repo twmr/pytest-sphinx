@@ -1,4 +1,5 @@
 import sys
+import platform
 
 import _pytest.doctest
 import pytest_sphinx
@@ -68,7 +69,9 @@ def test_failing_doctest_in_text_file(testdir):
 
 
 def test_expected_exception_doctest(testdir):
-    if sys.version_info.major < 3:
+    if platform.python_implementation() == 'PyPy':
+        exception_msg = 'integer division by zero'
+    elif sys.version_info.major < 3:
         exception_msg = 'integer division or modulo by zero'
     else:
         exception_msg = 'division by zero'
