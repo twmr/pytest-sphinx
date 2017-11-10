@@ -43,7 +43,8 @@ def test_with_options():
     example = test.examples[0]
 
     assert example.want == "{'3': 4,\n '5': 6}\n"
-    assert docstring2test(doc + '\n').examples[0].want == "{'3': 4,\n '5': 6}\n"
+    assert (docstring2test(doc + '\n').examples[0].want
+            == "{'3': 4,\n '5': 6}\n")
     assert example.exc_msg is None
     assert example.options == {
         doctest.NORMALIZE_WHITESPACE: True,

@@ -1,8 +1,6 @@
 import textwrap
 import doctest
 
-
-from pytest_sphinx import _OPTION_DIRECTIVE_RE_SUB
 from pytest_sphinx import _find_options
 
 
