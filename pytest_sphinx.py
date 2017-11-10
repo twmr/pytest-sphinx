@@ -333,7 +333,9 @@ class SphinxDoctestTextfile(pytest.Module):
         text = self.fspath.read_text(encoding)
         name = self.fspath.basename
 
+        optionflags = _pytest.doctest.get_optionflags(self)
         runner = SphinxDocTestRunner(verbose=0,
+                                     optionflags=optionflags,
                                      checker=_pytest.doctest._get_checker())
 
         test = docstring2test(text)
@@ -357,9 +359,10 @@ class SphinxDoctestModule(pytest.Module):
                     pytest.skip('unable to import module %r' % self.fspath)
                 else:
                     raise
-
+        optionflags = _pytest.doctest.get_optionflags(self)
         finder = doctest.DocTestFinder(parser=SphinxDocTestParser())
         runner = SphinxDocTestRunner(verbose=0,
+                                     optionflags=optionflags,
                                      checker=_pytest.doctest._get_checker())
 
         for test in finder.find(module, module.__name__):

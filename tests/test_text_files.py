@@ -110,3 +110,48 @@ def test_expected_exception_doctest(testdir):
     result = testdir.runpytest('--doctest-modules')
     result.stdout.fnmatch_lines([
         '*=== 1 passed in *'])
+
+
+def test_global_optionflags(testdir):
+    testdir.makeini("""
+        [pytest]
+        doctest_optionflags = ELLIPSIS
+    """)
+
+    testdir.maketxtfile(test_something="""
+        .. testcode::
+
+            print('abcdefgh')
+
+        .. testoutput::
+
+            ab...gh
+    """)
+
+    result = testdir.inline_run('--doctest-modules')
+    result.assertoutcome(passed=1, failed=0)
+
+
+def test_no_ellipsis_in_global_optionflags(testdir):
+    testdir.makeini("""
+        [pytest]
+        doctest_optionflags = NORMALIZE_WHITESPACE
+    """)
+
+    testdir.maketxtfile(test_something="""
+        .. testcode::
+
+            print('abcdefgh')
+
+        .. testoutput::
+
+            ab...gh
+    """)
+
+    result = testdir.runpytest('--doctest-modules')
+    result.stdout.fnmatch_lines([
+        'Expected:',
+        '*ab...gh',
+        'Got:',
+        '*abcdefgh',
+        '*=== 1 failed in *'])
