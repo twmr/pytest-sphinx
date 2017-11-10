@@ -24,6 +24,9 @@ Features
 
 * support for `testcode` and `testoutput` directives
 * support for `testsetup` and `testcleanup` is planned (pull-requests welcome)
+* support for parsing global optionflags (`doctest_optionflags`) from
+  `pytest.ini`
+* support for `:options:` in `testoutput`
 
 
 Requirements
