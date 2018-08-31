@@ -35,9 +35,10 @@ class SphinxDoctestDirectives(enum.Enum):
     DOCTEST = 5
 
 
-class SphinxDoctest:
+class SphinxDoctest(object):
     def __init__(self, examples, docstring,
                  filename='<sphinx-doctest>'):
+        super(SphinxDoctest, self).__init__()
         self.examples = examples
         self.globs = {}
         self.name = None
@@ -121,8 +122,9 @@ def docstring2test(docstring):
 
     matches.append(len(lines))
 
-    class Section:
+    class Section(object):
         def __init__(self, name, content, lineno):
+            super(Section, self).__init__()
             self.name = name
             self.lineno = lineno
             if name in (SphinxDoctestDirectives.TESTCODE,
@@ -313,7 +315,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
         return doctest.TestResults(failures, tries)
 
 
-class SphinxDocTestParser:
+class SphinxDocTestParser(object):
     def get_doctest(self, docstring, globs, name, filename, lineno):
         # TODO document why we need to overwrite? get_doctest
         test = docstring2test(docstring)
