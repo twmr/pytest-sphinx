@@ -21,7 +21,9 @@ import pytest
 
 
 def pairwise(iterable):
-    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    """
+    s -> (s0,s1), (s1,s2), (s2, s3), ...
+    """
     a, b = itertools.tee(iterable)
     next(b, None)
     return list(zip(a, b))
@@ -81,11 +83,12 @@ _OPTION_DIRECTIVE_RE_SUB = (
 
 def _find_options(want, name, lineno):
     """
-    Return a dictionary containing option overrides extracted from
-    option directives in the given `want` string.
+    Return a dictionary containing option overrides extracted from option
+    directives in the given `want` string.
 
-    `name` is the string's name, and `lineno` is the line number
-    where the example starts; both are used for error messages.
+    `name` is the string's name, and `lineno` is the line number where
+    the example starts; both are used for error messages.
+
     """
     options = {}
     # (note: with the current regexp, this will match at most once:)
@@ -191,13 +194,16 @@ class SphinxDocTestRunner(doctest.DebugRunner):
     """
     def _DocTestRunner__run(self, test, compileflags, out):
         """
-        Run the examples in `test`.  Write the outcome of each example
-        with one of the `DocTestRunner.report_*` methods, using the
-        writer function `out`.  `compileflags` is the set of compiler
-        flags that should be used to execute examples.  Return a tuple
-        `(f, t)`, where `t` is the number of examples tried, and `f`
-        is the number of examples that failed.  The examples are run
-        in the namespace `test.globs`.
+        Run the examples in `test`.
+
+        Write the outcome of each example with one of the
+        `DocTestRunner.report_*` methods, using the writer function
+        `out`.  `compileflags` is the set of compiler flags that should
+        be used to execute examples.  Return a tuple `(f, t)`, where `t`
+        is the number of examples tried, and `f` is the number of
+        examples that failed.  The examples are run in the namespace
+        `test.globs`.
+
         """
         # Keep track of the number of failures and tries.
         failures = tries = 0
