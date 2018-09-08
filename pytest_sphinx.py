@@ -37,18 +37,6 @@ class SphinxDoctestDirectives(enum.Enum):
     DOCTEST = 5
 
 
-class SphinxDoctest(object):
-    def __init__(self, examples, docstring,
-                 filename='<sphinx-doctest>'):
-        super(SphinxDoctest, self).__init__()
-        self.examples = examples
-        self.globs = {}
-        self.name = None
-        self.lineno = None
-        self.filename = filename
-        self.docstring = docstring
-
-
 def pytest_collect_file(path, parent):
     config = parent.config
     if path.ext == ".py":
@@ -109,10 +97,10 @@ def _find_options(want, name, lineno):
     return options
 
 
-def docstring2test(docstring):
+def docstring2examples(docstring):
     """
     Parse all sphinx test directives in the docstring and create a
-    SphinxDoctest object.
+    list of examples.
     """
     # TODO subclass doctest.DocTestParser instead?
 
@@ -121,7 +109,7 @@ def docstring2test(docstring):
                any(line.startswith('.. ' + d.name.lower() + '::')
                    for d in SphinxDoctestDirectives)]
     if not matches:
-        return SphinxDoctest([], docstring)
+        return []
 
     matches.append(len(lines))
 
@@ -184,7 +172,7 @@ def docstring2test(docstring):
                                 lineno=y.lineno - 1,
                                 options=options))
 
-    return SphinxDoctest(examples, docstring)
+    return examples
 
 
 class SphinxDocTestRunner(doctest.DebugRunner):
@@ -324,11 +312,12 @@ class SphinxDocTestRunner(doctest.DebugRunner):
 class SphinxDocTestParser(object):
     def get_doctest(self, docstring, globs, name, filename, lineno):
         # TODO document why we need to overwrite? get_doctest
-        test = docstring2test(docstring)
-        test.name = name
-        test.lineno = lineno
-        test.filename = filename
-        return test
+        return doctest.DocTest(examples=docstring2examples(docstring),
+                               globs=globs,
+                               name=name,
+                               filename=filename,
+                               lineno=lineno,
+                               docstring=docstring)
 
 
 class SphinxDoctestTextfile(pytest.Module):
@@ -346,9 +335,12 @@ class SphinxDoctestTextfile(pytest.Module):
                                      optionflags=optionflags,
                                      checker=_pytest.doctest._get_checker())
 
-        test = docstring2test(text)
-        test.name = name
-        test.lineno = 0
+        test = doctest.DocTest(examples=docstring2examples(text),
+                               globs={},
+                               name=name,
+                               filename=name,
+                               lineno=0,
+                               docstring=text)
 
         if test.examples:
             yield _pytest.doctest.DoctestItem(
