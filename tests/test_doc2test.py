@@ -1,6 +1,6 @@
 import doctest
 
-from pytest_sphinx import docstring2test
+from pytest_sphinx import docstring2examples
 
 
 def test_simple():
@@ -16,9 +16,9 @@ def test_simple():
      '5': 6}
 """
 
-    test = docstring2test(doc)
-    assert len(test.examples) == 1
-    example = test.examples[0]
+    examples = docstring2examples(doc)
+    assert len(examples) == 1
+    example = examples[0]
 
     assert example.want == "{'3': 4,\n '5': 6}\n"
     assert example.exc_msg is None
@@ -38,12 +38,12 @@ def test_with_options():
     {'3': 4,
      '5': 6}"""
 
-    test = docstring2test(doc)
-    assert len(test.examples) == 1
-    example = test.examples[0]
+    examples = docstring2examples(doc)
+    assert len(examples) == 1
+    example = examples[0]
 
     assert example.want == "{'3': 4,\n '5': 6}\n"
-    assert (docstring2test(doc + '\n').examples[0].want
+    assert (docstring2examples(doc + '\n')[0].want
             == "{'3': 4,\n '5': 6}\n")
     assert example.exc_msg is None
     assert example.options == {

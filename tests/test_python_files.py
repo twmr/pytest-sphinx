@@ -125,3 +125,36 @@ def test_working_module_doctest_nospaces(testdir):
     result = testdir.runpytest('--doctest-modules')
     result.stdout.fnmatch_lines([
         '*=== 1 passed in *'])
+
+
+def test_multiple_doctests_in_single_file(testdir):
+
+    testdir.makepyfile(textwrap.dedent("""
+        def foo():
+            \"\"\"
+            .. testcode::
+
+                print('1adlfadsf')
+
+            .. testoutput::
+
+                1...
+            \"\"\"
+            pass
+
+        def bar():
+            \"\"\"
+            .. testcode::
+
+                print('1adlfadsf')
+
+            .. testoutput::
+
+                1...
+            \"\"\"
+            pass
+    """))
+
+    result = testdir.runpytest('--doctest-modules')
+    result.stdout.fnmatch_lines([
+        '*=== 2 passed in *'])
