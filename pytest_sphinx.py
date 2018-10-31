@@ -121,9 +121,9 @@ def docstring2examples(docstring):
             if name in (SphinxDoctestDirectives.TESTCODE,
                         SphinxDoctestDirectives.TESTOUTPUT):
                 # remove empty lines
-                filtered = filter(lambda x: not re.match(r'^\s*$', x),
-                                  content.splitlines())
-                self.content = '\n'.join(filtered)
+                self.content = '\n'.join(
+                    [line for line in content.splitlines()
+                     if not re.match(r'^\s*$', line)])
             else:
                 self.content = content
 
