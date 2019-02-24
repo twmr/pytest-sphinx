@@ -106,7 +106,7 @@ def docstring2examples(docstring):
 
     lines = textwrap.dedent(docstring).splitlines()
     matches = [i for i, line in enumerate(lines) if
-               any(line.startswith('.. ' + d.name.lower() + '::')
+               any(line.strip().startswith('.. ' + d.name.lower() + '::')
                    for d in SphinxDoctestDirectives)]
     if not matches:
         return []

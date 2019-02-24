@@ -158,3 +158,24 @@ def test_multiple_doctests_in_single_file(testdir):
     result = testdir.runpytest('--doctest-modules')
     result.stdout.fnmatch_lines([
         '*=== 2 passed in *'])
+
+
+def test_indented(testdir):
+    testdir.makepyfile(textwrap.dedent("""
+    '''
+    Examples:
+        some text
+
+        .. testcode::
+
+            print("Banana")
+
+        .. testoutput::
+
+            Banana
+    '''
+    """))
+
+    result = testdir.runpytest('--doctest-modules')
+    result.stdout.fnmatch_lines([
+        '*=== 1 passed in *'])
