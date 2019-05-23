@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import textwrap
 
+import six
+
 
 def test_syntax_error_in_module_doctest(testdir):
 
@@ -175,6 +177,30 @@ def test_indented(testdir):
             Banana
     '''
     """))
+
+    result = testdir.runpytest('--doctest-modules')
+    result.stdout.fnmatch_lines([
+        '*=== 1 passed in *'])
+
+
+def test_workaround_for_doctest_mockobj_bug(testdir):
+    # see https://github.com/pytest-dev/pytest/issues/3456
+
+    testdir.makepyfile(textwrap.dedent("""
+        \"\"\"
+        .. testcode::
+
+            print("Banana")
+
+        .. testoutput::
+
+            Banana
+
+        \"\"\"
+
+        {}
+    """).format('from mock import call' if six.PY2
+                else 'from unittest.mock import call'))
 
     result = testdir.runpytest('--doctest-modules')
     result.stdout.fnmatch_lines([

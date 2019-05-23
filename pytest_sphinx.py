@@ -360,7 +360,35 @@ class SphinxDoctestModule(pytest.Module):
                 else:
                     raise
         optionflags = _pytest.doctest.get_optionflags(self)
-        finder = doctest.DocTestFinder(parser=SphinxDocTestParser())
+
+        class MockAwareDocTestFinder(doctest.DocTestFinder):
+            """
+            a hackish doctest finder that overrides stdlib internals to fix
+            a stdlib bug
+            https://github.com/pytest-dev/pytest/issues/3456
+            https://bugs.python.org/issue25532
+
+            fix taken from https://github.com/pytest-dev/pytest/pull/4212/
+            """
+
+            def _find(self, tests, obj, name, module, source_lines,
+                      globs, seen):
+                if _is_mocked(obj):
+                    return
+                with _patch_unwrap_mock_aware():
+                    doctest.DocTestFinder._find(
+                        self, tests, obj, name, module, source_lines, globs,
+                        seen
+                    )
+
+        try:
+            from _pytest.doctest import _is_mocked
+            from _pytest.doctest import _patch_unwrap_mock_aware
+        except ImportError:
+            finder = doctest.DocTestFinder(parser=SphinxDocTestParser())
+        else:
+            finder = MockAwareDocTestFinder(parser=SphinxDocTestParser())
+
         runner = SphinxDocTestRunner(verbose=0,
                                      optionflags=optionflags,
                                      checker=_pytest.doctest._get_checker())
