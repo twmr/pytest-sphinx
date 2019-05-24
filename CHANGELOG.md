@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add hack for handling mock style objects
 - Add support for indented directives (Fixes #6)
 
-## [0.2.1] - 2017-09-09
+## [0.2.1] - 2018-09-09
 ###
 - Support sorting of doctests (Fixes #1)
 
