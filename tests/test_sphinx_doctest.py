@@ -96,7 +96,7 @@ def test_simple_doctest_success(sphinx_tester):
 
 
 class TestDirectives:
-    def test_testcode(self, sphinx_tester):
+    def test_testcode(self, testdir, sphinx_tester):
         code = """
             .. testcode::
 
@@ -107,11 +107,14 @@ class TestDirectives:
                 msg from testcode directive
             """
 
-        output = sphinx_tester(code)
-        assert "1 items passed all tests" in output
+        sphinx_output = sphinx_tester(code)
+        assert "1 items passed all tests" in sphinx_output
+
+        plugin_result = testdir.runpytest("--doctest-glob=index.rst").stdout
+        plugin_result.fnmatch_lines(["*=== 1 passed in *"])
 
     @pytest.mark.parametrize("raise_in_testcode", [True, False])
-    def test_skipif(self, sphinx_tester, raise_in_testcode):
+    def test_skipif_true(self, testdir, sphinx_tester, raise_in_testcode):
         code = """
             .. testcode::
 
@@ -125,9 +128,44 @@ class TestDirectives:
             "raise RuntimeError" if raise_in_testcode else "pass"
         )
 
-        output = sphinx_tester(code, must_raise=raise_in_testcode)
+        sphinx_output = sphinx_tester(code, must_raise=raise_in_testcode)
+
+        # -> ignore the testoutput section if skipif evaluates to True, but
+        # -> always run the code in testcode
+        plugin_output = testdir.runpytest("--doctest-glob=index.rst").stdout
 
         if raise_in_testcode:
-            assert "1 failure in tests" in output
+            assert "1 failure in tests" in sphinx_output
+            plugin_output.fnmatch_lines(["*=== 1 failed in *"])
         else:
-            assert "1 items passed all tests" in output
+            assert "1 items passed all tests" in sphinx_output
+            plugin_output.fnmatch_lines(["*=== 1 passed in *"])
+
+    @pytest.mark.parametrize(
+        "testcode", ["raise RuntimeError", "pass", "print('EVALUATED')"]
+    )
+    def test_skipif_false(self, testdir, sphinx_tester, testcode):
+        code = """
+            .. testcode::
+
+                {}
+
+            .. testoutput::
+                :skipif: False
+
+                EVALUATED
+            """.format(
+            testcode
+        )
+
+        expected_failure = "EVALUATED" not in testcode
+
+        sphinx_output = sphinx_tester(code, must_raise=expected_failure)
+        plugin_output = testdir.runpytest("--doctest-glob=index.rst").stdout
+
+        if expected_failure:
+            assert "1 failure in tests" in sphinx_output
+            plugin_output.fnmatch_lines(["*=== 1 failed in *"])
+        else:
+            assert "1 items passed all tests" in sphinx_output
+            plugin_output.fnmatch_lines(["*=== 1 passed in *"])

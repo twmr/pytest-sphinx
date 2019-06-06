@@ -165,3 +165,21 @@ def test_no_ellipsis_in_global_optionflags(testdir):
     result.stdout.fnmatch_lines(
         ["Expected:", "*ab...gh", "Got:", "*abcdefgh", "*=== 1 failed in *"]
     )
+
+
+def test_skipif_non_builtin(testdir):
+    testdir.maketxtfile(
+        test_something="""
+        .. testcode::
+
+            print('abcdefgh')
+
+        .. testoutput::
+            :skipif: pd is not None
+
+            NOT EVALUATED
+    """
+    )
+
+    result = testdir.runpytest("--doctest-modules")
+    result.stdout.fnmatch_lines(["*NameError: name 'pd' is not defined"])
