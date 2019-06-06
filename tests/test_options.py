@@ -1,7 +1,11 @@
 import textwrap
 import doctest
+import six
+
+import pytest
 
 from pytest_sphinx import _find_options
+from pytest_sphinx import SkippedOutputAssertion
 
 
 def test_only_options():
@@ -11,7 +15,7 @@ def test_only_options():
     """
     )
 
-    ret = _find_options(want, "dummy", 10)
+    ret = _find_options(want, "dummy", 10, {})
     assert ret == {4: True}
 
 
@@ -22,7 +26,7 @@ def test_mulitple_options():
     """
     )
 
-    ret = _find_options(want, "dummy", 10)
+    ret = _find_options(want, "dummy", 10, {})
     assert ret == {doctest.NORMALIZE_WHITESPACE: True, doctest.ELLIPSIS: False}
 
 
@@ -36,8 +40,36 @@ def test_options_and_text():
     """
     )
 
-    ret = _find_options(want, "dummy", 10)
+    ret = _find_options(want, "dummy", 10, {})
     assert ret == {4: True}
+
+
+@pytest.mark.parametrize("expr,expected_skip", [("True", True)])
+@pytest.mark.parametrize("with_options", [True, False])
+def test_skipif_and_text(expr, expected_skip, with_options):
+    want = textwrap.dedent(
+        """
+        :skipif: {}
+
+        abcedf
+        abcedf
+    """.format(
+            expr
+        )
+    )
+    if with_options:
+        want = "\n:options: +NORMALIZE_WHITESPACE\n" + want
+
+    if expected_skip:
+        with pytest.raises(SkippedOutputAssertion):
+            ret = _find_options(want, "dummy", 10, {"six": six})
+    else:
+        ret = _find_options(want, "dummy", 10, {"six": six})
+
+        if with_options:
+            assert ret == {doctest.NORMALIZE_WHITESPACE: True}
+        else:
+            assert ret == {}
 
 
 def test_check_output_with_whitespace_normalization():

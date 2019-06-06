@@ -30,6 +30,11 @@ def pairwise(iterable):
     return list(zip(a, b))
 
 
+class SkippedOutputAssertion(Exception):
+    # only used for the testoutput directive
+    pass
+
+
 class SphinxDoctestDirectives(enum.Enum):
     TESTCODE = 1
     TESTOUTPUT = 2
@@ -68,19 +73,37 @@ def _is_doctest(config, path, parent):
 # with ":options:".
 _OPTION_DIRECTIVE_RE = re.compile(r':options:\s*([^\n\'"]*)$', re.MULTILINE)
 
-
-# In order to compare the testoutput, containing Option directives we have
-# to remove the optiondirectives from the string after parsing.
-_OPTION_DIRECTIVE_RE_SUB = re.compile(r':options:\s*([^\n\'"]*)\n').sub
+_OPTION_SKIPIF_RE = re.compile(r':skipif:\s*([^\n\'"]*)$', re.MULTILINE)
 
 
-def _find_options(want, name, lineno):
+# In order to compare the testoutput, containing Option directives
+# (including skipif) we have to remove the optiondirectives from the string
+# after parsing.
+_OPTION_DIRECTIVE_RE_SUB = re.compile(
+    r':(options|skipif):\s*([^\n\'"]*)\n'
+).sub
+
+
+def _find_options(want, name, lineno, globs):
     """
     Return a dictionary containing option overrides extracted from option
     directives in the given `want` string.
 
-    `name` is the string's name, and `lineno` is the line number where
-    the example starts; both are used for error messages.
+    Parameters
+    ----------
+    want : str
+        text that is part of the `testoutput` block.
+    name : str
+    lineno : int
+        line number where the example starts.
+    globs : dict
+        globals used for evaluating expressions in the "skipif" option.
+
+    Raises
+    ------
+    SkippedOutputAssertion
+        If the `want` string contains ":skipif:", whose expression evaluates
+        to True.
 
     """
     options = {}
@@ -98,20 +121,30 @@ def _find_options(want, name, lineno):
                 )
             flag = doctest.OPTIONFLAGS_BY_NAME[option[1:]]
             options[flag] = option[0] == "+"
+
     if options and doctest.DocTestParser._IS_BLANK_OR_COMMENT(want):
         raise ValueError(
             "line %r of the doctest for %s has an option "
             "directive on a line with no example: %r" % (lineno, name, want)
         )
+
+    for m in _OPTION_SKIPIF_RE.finditer(want):
+        skipif_expr = m.group(1)
+        if eval(skipif_expr, globs):
+            raise SkippedOutputAssertion
+
     return options
 
 
-def docstring2examples(docstring):
+def docstring2examples(docstring, globs=None):
     """
     Parse all sphinx test directives in the docstring and create a
     list of examples.
     """
     # TODO subclass doctest.DocTestParser instead?
+
+    if not globs:
+        globs = {}
 
     lines = textwrap.dedent(docstring).splitlines()
     matches = [
@@ -175,12 +208,14 @@ def docstring2examples(docstring):
             else:
                 exc_msg = None
 
-            options = _find_options(want, "dummy", y.lineno)
-
-            # where should the :options: string be removed?
-            # (only in the OutputChecker?, but then it is visible in the
-            # pytest output in the "EXPECTED" section....
-            want = _OPTION_DIRECTIVE_RE_SUB("", want)
+            try:
+                options = _find_options(want, "dummy", y.lineno, globs)
+                want = _OPTION_DIRECTIVE_RE_SUB("", want)
+            except SkippedOutputAssertion:
+                options = {}
+                # by setting doctest.Example.want to None, we skip the
+                # want/got comparison
+                want = None
 
             examples.append(
                 doctest.Example(
@@ -285,7 +320,9 @@ class SphinxDocTestRunner(doctest.DebugRunner):
             # If the example executed without raising any exceptions,
             # verify its output.
             if exception is None:
-                if check(example.want, got, self.optionflags):
+                if example.want is None:
+                    outcome = SUCCESS
+                elif check(example.want, got, self.optionflags):
                     outcome = SUCCESS
 
             # The example raised an exception:  check if it was expected.
@@ -344,7 +381,7 @@ class SphinxDocTestParser(object):
     def get_doctest(self, docstring, globs, name, filename, lineno):
         # TODO document why we need to overwrite? get_doctest
         return doctest.DocTest(
-            examples=docstring2examples(docstring),
+            examples=docstring2examples(docstring, globs=globs),
             globs=globs,
             name=name,
             filename=filename,
