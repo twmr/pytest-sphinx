@@ -47,7 +47,7 @@ You can install "pytest-sphinx" via `pip`_ from `PyPI`_::
 Usage
 -----
 
-* See `doctest-sphinx`_.
+* See `doctest-sphinx`_. Have a look at the examples in `doctest-examples`_.
 * Run pytest with the `--doctest-modules` flag.
 
 
@@ -69,6 +69,7 @@ Issues
 If you encounter any problems, please `file an issue`_ along with a detailed description.
 
 .. _`doctest-sphinx`: http://www.sphinx-doc.org/en/stable/ext/doctest.html
+.. _`doctest-examples`: https://github.com/sphinx-doc/sphinx/blob/master/tests/roots/test-ext-doctest/doctest.txt
 .. _`Cookiecutter`: https://github.com/audreyr/cookiecutter
 .. _`@hackebrot`: https://github.com/hackebrot
 .. _`MIT`: http://opensource.org/licenses/MIT
