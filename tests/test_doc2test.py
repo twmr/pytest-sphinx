@@ -44,16 +44,17 @@ def test_with_options():
     example = examples[0]
 
     assert example.want == "{'3': 4,\n '5': 6}\n"
-    assert (docstring2examples(doc + '\n')[0].want
-            == "{'3': 4,\n '5': 6}\n")
+    assert docstring2examples(doc + "\n")[0].want == "{'3': 4,\n '5': 6}\n"
     assert example.exc_msg is None
     assert example.options == {
         doctest.NORMALIZE_WHITESPACE: True,
-        doctest.ELLIPSIS: True}
+        doctest.ELLIPSIS: True,
+    }
 
 
 def test_indented():
-    doc = textwrap.dedent("""
+    doc = textwrap.dedent(
+        """
     Examples:
         some text
 
@@ -64,7 +65,8 @@ def test_indented():
         .. testoutput::
 
             Banana
-    """)
+    """
+    )
 
     examples = docstring2examples(doc)
     assert len(examples) == 1
