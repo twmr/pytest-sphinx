@@ -16,8 +16,13 @@ import textwrap
 import sys
 import traceback
 
+from pkg_resources import parse_version
+
 import _pytest.doctest
 import pytest
+
+
+PYTEST_PRE_54 = parse_version(pytest.__version__) < parse_version('5.4')
 
 
 def pairwise(iterable):
@@ -41,9 +46,15 @@ def pytest_collect_file(path, parent):
     config = parent.config
     if path.ext == ".py":
         if config.option.doctestmodules:
-            return SphinxDoctestModule(path, parent)
+            if PYTEST_PRE_54:
+                return SphinxDoctestModule(path, parent)
+            else:
+                return SphinxDoctestModule.from_parent(parent, fspath=path)
     elif _is_doctest(config, path, parent):
-        return SphinxDoctestTextfile(path, parent)
+        if PYTEST_PRE_54:
+            return SphinxDoctestTextfile(path, parent)
+        else:
+            return SphinxDoctestTextfile.from_parent(parent, fspath=path)
 
 
 def _is_doctest(config, path, parent):
@@ -343,8 +354,11 @@ class SphinxDoctestTextfile(pytest.Module):
                                docstring=text)
 
         if test.examples:
-            yield _pytest.doctest.DoctestItem(
-                test.name, self, runner, test)
+            if PYTEST_PRE_54:
+                yield _pytest.doctest.DoctestItem(test.name, self, runner, test)
+            else:
+                yield _pytest.doctest.DoctestItem.from_parent(
+                    parent=self, name=test.name, runner=runner, dtest=test)
 
 
 class SphinxDoctestModule(pytest.Module):
@@ -395,5 +409,9 @@ class SphinxDoctestModule(pytest.Module):
 
         for test in finder.find(module, module.__name__):
             if test.examples:
-                yield _pytest.doctest.DoctestItem(
-                    test.name, self, runner, test)
+                if PYTEST_PRE_54:
+                    yield _pytest.doctest.DoctestItem(
+                        test.name, self, runner, test)
+                else:
+                    yield _pytest.doctest.DoctestItem.from_parent(
+                        parent=self, name=test.name, runner=runner, dtest=test)
