@@ -17,7 +17,7 @@ matrix:
         env: TOX_ENV=py38
       - python: pypy
         env: TOX_ENV=pypy
-      - python: 3.6
+      - python: 3.8
         env: TOX_ENV=flake8
 
 install:

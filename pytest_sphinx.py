@@ -355,7 +355,8 @@ class SphinxDoctestTextfile(pytest.Module):
 
         if test.examples:
             if PYTEST_PRE_54:
-                yield _pytest.doctest.DoctestItem(test.name, self, runner, test)
+                yield _pytest.doctest.DoctestItem(
+                    test.name, self, runner, test)
             else:
                 yield _pytest.doctest.DoctestItem.from_parent(
                     parent=self, name=test.name, runner=runner, dtest=test)

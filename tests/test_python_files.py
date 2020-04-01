@@ -229,7 +229,9 @@ def test_workaround_for_doctest_mockobj_bug(testdir):
         {}
     """
         ).format(
-            "from mock import call" if six.PY2 else "from unittest.mock import call"
+            "from mock import call"
+            if six.PY2
+            else "from unittest.mock import call"
         )
     )
 
