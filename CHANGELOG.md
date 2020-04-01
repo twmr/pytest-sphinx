@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ###
 - Adapt to Node API changes in pytest-5.4 (Fixes #11)
+- Add support for python 3.8 (Fixes #15)
 
 ## [0.2.2] - 2019-05-24
 ###
