@@ -16,13 +16,9 @@ import textwrap
 import sys
 import traceback
 
-from pkg_resources import parse_version
-
 import _pytest.doctest
+from _pytest.doctest import DoctestItem
 import pytest
-
-
-PYTEST_PRE_54 = parse_version(pytest.__version__) < parse_version('5.4')
 
 
 def pairwise(iterable):
@@ -46,15 +42,15 @@ def pytest_collect_file(path, parent):
     config = parent.config
     if path.ext == ".py":
         if config.option.doctestmodules:
-            if PYTEST_PRE_54:
-                return SphinxDoctestModule(path, parent)
-            else:
+            if hasattr(SphinxDoctestModule, 'from_parent'):
                 return SphinxDoctestModule.from_parent(parent, fspath=path)
+            else:
+                return SphinxDoctestModule(path, parent)
     elif _is_doctest(config, path, parent):
-        if PYTEST_PRE_54:
-            return SphinxDoctestTextfile(path, parent)
-        else:
+        if hasattr(SphinxDoctestTextfile, 'from_parent'):
             return SphinxDoctestTextfile.from_parent(parent, fspath=path)
+        else:
+            return SphinxDoctestTextfile(path, parent)
 
 
 def _is_doctest(config, path, parent):
@@ -354,12 +350,12 @@ class SphinxDoctestTextfile(pytest.Module):
                                docstring=text)
 
         if test.examples:
-            if PYTEST_PRE_54:
-                yield _pytest.doctest.DoctestItem(
-                    test.name, self, runner, test)
-            else:
-                yield _pytest.doctest.DoctestItem.from_parent(
+            if hasattr(DoctestItem, 'from_parent'):
+                yield DoctestItem.from_parent(
                     parent=self, name=test.name, runner=runner, dtest=test)
+            else:
+                yield DoctestItem(
+                    test.name, self, runner, test)
 
 
 class SphinxDoctestModule(pytest.Module):
@@ -410,9 +406,9 @@ class SphinxDoctestModule(pytest.Module):
 
         for test in finder.find(module, module.__name__):
             if test.examples:
-                if PYTEST_PRE_54:
-                    yield _pytest.doctest.DoctestItem(
-                        test.name, self, runner, test)
-                else:
-                    yield _pytest.doctest.DoctestItem.from_parent(
+                if hasattr(DoctestItem, 'from_parent'):
+                    yield DoctestItem.from_parent(
                         parent=self, name=test.name, runner=runner, dtest=test)
+                else:
+                    yield DoctestItem(
+                        test.name, self, runner, test)
