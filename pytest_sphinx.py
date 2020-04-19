@@ -69,6 +69,9 @@ def _is_doctest(config, path, parent):
 _OPTION_DIRECTIVE_RE = re.compile(r':options:\s*([^\n\'"]*)$',
                                   re.MULTILINE)
 
+_OPTION_SKIPIF_RE = re.compile(r':skipif:\s*([^\n\'"]*)$',
+                               re.MULTILINE)
+
 
 # In order to compare the testoutput, containing Option directives we have
 # to remove the optiondirectives from the string after parsing.
@@ -76,13 +79,20 @@ _OPTION_DIRECTIVE_RE_SUB = (
     re.compile(r':options:\s*([^\n\'"]*)\n').sub)
 
 
-def _find_options(want, name, lineno):
+def _find_options(want, name, lineno, globs):
     """
     Return a dictionary containing option overrides extracted from option
     directives in the given `want` string.
 
-    `name` is the string's name, and `lineno` is the line number where
-    the example starts; both are used for error messages.
+    Parameters
+    ----------
+    want : str
+        text that is part of the `testoutput` block.
+    name : str
+    lineno : int
+        line number where the example starts.
+    globs : dict
+        globals used for evaluating expressions in the "skipif" option.
 
     """
     options = {}
@@ -97,19 +107,28 @@ def _find_options(want, name, lineno):
                                  (lineno + 1, name, option))
             flag = doctest.OPTIONFLAGS_BY_NAME[option[1:]]
             options[flag] = (option[0] == '+')
+
     if options and doctest.DocTestParser._IS_BLANK_OR_COMMENT(want):
         raise ValueError('line %r of the doctest for %s has an option '
                          'directive on a line with no example: %r' %
                          (lineno, name, want))
+
+    for m in _OPTION_SKIPIF_RE.finditer(want):
+        skipif_expr = m.group(1)
+        options[doctest.SKIP] = eval(skipif_expr, globs)
+
     return options
 
 
-def docstring2examples(docstring):
+def docstring2examples(docstring, globs=None):
     """
     Parse all sphinx test directives in the docstring and create a
     list of examples.
     """
     # TODO subclass doctest.DocTestParser instead?
+
+    if not globs:
+        globs = {}
 
     lines = textwrap.dedent(docstring).splitlines()
     matches = [i for i, line in enumerate(lines) if
@@ -163,7 +182,7 @@ def docstring2examples(docstring):
             else:
                 exc_msg = None
 
-            options = _find_options(want, 'dummy', y.lineno)
+            options = _find_options(want, 'dummy', y.lineno, globs)
 
             # where should the :options: string be removed?
             # (only in the OutputChecker?, but then it is visible in the
@@ -319,7 +338,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
 class SphinxDocTestParser(object):
     def get_doctest(self, docstring, globs, name, filename, lineno):
         # TODO document why we need to overwrite? get_doctest
-        return doctest.DocTest(examples=docstring2examples(docstring),
+        return doctest.DocTest(examples=docstring2examples(docstring, globs=globs),
                                globs=globs,
                                name=name,
                                filename=filename,

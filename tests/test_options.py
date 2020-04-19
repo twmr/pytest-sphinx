@@ -1,5 +1,6 @@
 import textwrap
 import doctest
+import six
 
 from pytest_sphinx import _find_options
 
@@ -11,7 +12,7 @@ def test_only_options():
     """
     )
 
-    ret = _find_options(want, "dummy", 10)
+    ret = _find_options(want, "dummy", 10, {})
     assert ret == {4: True}
 
 
@@ -22,7 +23,7 @@ def test_mulitple_options():
     """
     )
 
-    ret = _find_options(want, "dummy", 10)
+    ret = _find_options(want, "dummy", 10, {})
     assert ret == {doctest.NORMALIZE_WHITESPACE: True, doctest.ELLIPSIS: False}
 
 
@@ -36,8 +37,40 @@ def test_options_and_text():
     """
     )
 
-    ret = _find_options(want, "dummy", 10)
+    ret = _find_options(want, "dummy", 10, {})
     assert ret == {4: True}
+
+
+def test_skipif_and_text():
+    want = textwrap.dedent(
+        """
+        :skipif: six.PY2
+
+        abcedf
+        abcedf
+    """
+    )
+    ret = _find_options(want, "dummy", 10, {"six": six})
+
+    assert ret == {doctest.SKIP: six.PY2}
+    assert ret == {16: six.PY2}
+
+
+def test_options_and_skipif_and_text():
+    want = textwrap.dedent(
+        """
+        :options: +NORMALIZE_WHITESPACE
+        :skipif: six.PY2
+
+        abcedf
+        abcedf
+    """
+    )
+
+    ret = _find_options(want, "dummy", 10, {"six": six})
+
+    assert ret == {doctest.SKIP: six.PY2, doctest.NORMALIZE_WHITESPACE: True}
+    assert ret == {16: six.PY2, 4: True}
 
 
 def test_check_output_with_whitespace_normalization():
