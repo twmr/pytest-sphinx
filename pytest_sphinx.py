@@ -136,6 +136,16 @@ def _find_options(want, name, lineno, globs):
     return options
 
 
+def _get_next_textoutputsections(sections, index):
+    """Yield successive TESTOUTPUT sections."""
+    for j in range(index, len(sections)):
+        section = sections[j]
+        if section.name == SphinxDoctestDirectives.TESTOUTPUT:
+            yield section
+        else:
+            break
+
+
 def docstring2examples(docstring, globs=None):
     """
     Parse all sphinx test directives in the docstring and create a
@@ -193,43 +203,71 @@ def docstring2examples(docstring, globs=None):
         out = "\n".join(itertools.takewhile(is_empty_of_indented, section[1:]))
         sections.append(Section(directive, textwrap.dedent(out), lineno=x))
 
+    def get_testoutput_section_data(section):
+        want = section.content
+        exc_msg = None
+
+        try:
+            options = _find_options(want, "dummy", section.lineno, globs)
+            want = _OPTION_DIRECTIVE_RE_SUB("", want)
+        except SkippedOutputAssertion:
+            options = {}
+            # by setting doctest.Example.want to None, we skip the
+            # output (want vs got) comparison
+            want = None
+        else:
+            match = doctest.DocTestParser._EXCEPTION_RE.match(want)
+            if match:
+                exc_msg = match.group("msg")
+
+        return want, options, section.lineno, exc_msg
+
     examples = []
-    for x, y in pairwise(sections):
+    for i, current_section in enumerate(sections):
         # TODO support SphinxDoctestDirectives.TESTSETUP, ...
-        if (
-            x.name == SphinxDoctestDirectives.TESTCODE
-            and y.name == SphinxDoctestDirectives.TESTOUTPUT
-        ):
+        if current_section.name == SphinxDoctestDirectives.TESTCODE:
+            next_testoutput_sections = _get_next_textoutputsections(
+                sections, i + 1
+            )
+            section_data_seq = [
+                get_testoutput_section_data(s)
+                for s in next_testoutput_sections
+            ]
 
-            want = y.content
-            m = doctest.DocTestParser._EXCEPTION_RE.match(want)
-            if m:
-                exc_msg = m.group("msg")
+            num_unskipped_sections = len(
+                [d for d in section_data_seq if d[0] is not None]
+            )
+            if num_unskipped_sections > 1:
+                raise ValueError(
+                    "There are multiple unskipped TESTOUTPUT sections"
+                )
+
+            if num_unskipped_sections:
+                want, options, _, exc_msg = next(
+                    d for d in section_data_seq if d[0] is not None
+                )
+                # see comment below (where we use lineno -1)
+                lineno = section_data_seq[0][2]
             else:
-                exc_msg = None
-
-            try:
-                options = _find_options(want, "dummy", y.lineno, globs)
-                want = _OPTION_DIRECTIVE_RE_SUB("", want)
-            except SkippedOutputAssertion:
-                options = {}
-                # by setting doctest.Example.want to None, we skip the
-                # want/got comparison
-                want = None
+                # no unskipped testoutput section
+                # do we really need doctest.Example to test
+                # independent TESTCODE sections?
+                # TODO lineno may be wrong
+                want, options, lineno, exc_msg = None, {}, 1, None
 
             examples.append(
                 doctest.Example(
-                    source=x.content,
+                    source=current_section.content,
                     want=want,
                     exc_msg=exc_msg,
                     # we want to see the ..testcode lines in the
                     # console output but not the ..testoutput
                     # lines
-                    lineno=y.lineno - 1,
+                    # TODO why do we want to hide testoutput??
+                    lineno=lineno - 1,
                     options=options,
                 )
             )
-
     return examples
 
 
