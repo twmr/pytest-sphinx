@@ -182,4 +182,4 @@ def test_skipif_non_builtin(testdir):
     )
 
     result = testdir.runpytest("--doctest-modules")
-    result.stdout.fnmatch_lines(["*NameError: name 'pd' is not defined"])
+    result.stdout.fnmatch_lines(["*NameError:*name 'pd' is not defined"])
