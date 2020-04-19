@@ -45,5 +45,5 @@ setup(
         "Operating System :: OS Independent",
         "License :: OSI Approved :: BSD License",
     ],
-    entry_points={"pytest11": ["sphinx = pytest_sphinx",],},
+    entry_points={"pytest11": ["sphinx = pytest_sphinx"]},
 )
