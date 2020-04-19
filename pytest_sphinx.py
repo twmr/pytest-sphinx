@@ -5,7 +5,6 @@ https://github.com/sphinx-doc/sphinx/blob/master/sphinx/ext/doctest.py
 
 * TODO
 ** CLEANUP: use the sphinx directive parser from the sphinx project
-** support for :options: in testoutput (see sphinx-doc)
 """
 
 import doctest
