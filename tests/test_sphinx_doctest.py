@@ -169,3 +169,44 @@ class TestDirectives:
         else:
             assert "1 items passed all tests" in sphinx_output
             plugin_output.fnmatch_lines(["*=== 1 passed in *"])
+
+    @pytest.mark.parametrize("wrong_output_assertion", [True, False])
+    def test_skipif_multiple_testoutput(
+        self, testdir, sphinx_tester, wrong_output_assertion
+    ):
+        # TODO add test, where there are muliple un-skipped testoutput
+        # sections. IMO this must lead to a testfailure, which is currently
+        # not the case in sphinx -> Create sphinx ticket
+        code = """
+            .. testcode::
+
+                raise RuntimeError
+
+            .. testoutput::
+                :skipif: True
+
+                NOT EVALUATED
+
+            .. testoutput::
+                :skipif: False
+
+                Traceback (most recent call last):
+                    ...
+                {}
+            """.format(
+            "ValueError" if wrong_output_assertion else "RuntimeError"
+        )
+
+        # -> ignore all skipped testoutput sections, but use the one that is
+        # -> not skipped
+
+        sphinx_output = sphinx_tester(code, must_raise=wrong_output_assertion)
+
+        plugin_output = testdir.runpytest("--doctest-glob=index.rst").stdout
+
+        if wrong_output_assertion:
+            assert "1 failure in tests" in sphinx_output
+            plugin_output.fnmatch_lines(["*=== 1 failed in *"])
+        else:
+            assert "1 items passed all tests" in sphinx_output
+            plugin_output.fnmatch_lines(["*=== 1 passed in *"])
