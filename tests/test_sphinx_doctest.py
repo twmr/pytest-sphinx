@@ -1,10 +1,13 @@
 """ Run tests that call "sphinx-build -M doctest". """
+import logging
 import subprocess
 import sys
 import textwrap
 
 import pytest
 
+
+logger = logging.getLogger(__name__)
 
 pytestmark = pytest.mark.skipif(
     sys.version_info.major == 2, reason="problems with shinx in py2"
@@ -35,14 +38,18 @@ class SphinxDoctestRunner:
 
     def __call__(self, rst_file_content, must_raise=False, sphinxopts=None):
         index_rst = self.tmpdir.join("source").join("index.rst")
+        rst_file_content = textwrap.dedent(rst_file_content)
         index_rst.write(rst_file_content)
+        logger.info('content of index.rst:\n%s', rst_file_content)
 
         cmd = ["sphinx-build", "-M", "doctest", "source", ""]
         if sphinxopts:
             cmd.append(sphinxopts)
 
         def to_str(subprocess_output):
-            return "\n".join(subprocess_output.decode().splitlines())
+            output_str = "\n".join(subprocess_output.decode().splitlines())
+            logger.info("%s produced:\n%s", cmd, output_str)
+            return output_str
 
         if must_raise:
             with pytest.raises(subprocess.CalledProcessError) as excinfo:
