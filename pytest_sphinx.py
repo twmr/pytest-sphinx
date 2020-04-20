@@ -232,9 +232,7 @@ def docstring2examples(docstring, globs=None):
                 for s in next_testoutput_sections
             ]
 
-            num_unskipped_sections = len(
-                [d for d in section_data_seq if d[0]]
-            )
+            num_unskipped_sections = len([d for d in section_data_seq if d[0]])
             if num_unskipped_sections > 1:
                 raise ValueError(
                     "There are multiple unskipped TESTOUTPUT sections"

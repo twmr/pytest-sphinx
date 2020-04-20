@@ -40,7 +40,7 @@ class SphinxDoctestRunner:
         index_rst = self.tmpdir.join("source").join("index.rst")
         rst_file_content = textwrap.dedent(rst_file_content)
         index_rst.write(rst_file_content)
-        logger.info('content of index.rst:\n%s', rst_file_content)
+        logger.info("content of index.rst:\n%s", rst_file_content)
 
         cmd = ["sphinx-build", "-M", "doctest", "source", ""]
         if sphinxopts:
