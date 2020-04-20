@@ -41,11 +41,14 @@ class SphinxDoctestRunner:
         if sphinxopts:
             cmd.append(sphinxopts)
 
+        def to_str(subprocess_output):
+            return "\n".join(subprocess_output.decode().splitlines())
+
         if must_raise:
             with pytest.raises(subprocess.CalledProcessError) as excinfo:
                 subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-            return excinfo.value.output.decode().replace(r"\r\n", r"\n")
-        return subprocess.check_output(cmd).decode().replace(r"\r\n", r"\n")
+            return to_str(excinfo.value.output)
+        return to_str(subprocess.check_output(cmd))
 
 
 @pytest.fixture
