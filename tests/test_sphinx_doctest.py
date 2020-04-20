@@ -120,8 +120,10 @@ class TestDirectives:
         plugin_result = testdir.runpytest("--doctest-glob=index.rst").stdout
         plugin_result.fnmatch_lines(["*=== 1 passed in *"])
 
-    @pytest.mark.parametrize("raise_in_testcode", [True, False])
-    def test_skipif_true(self, testdir, sphinx_tester, raise_in_testcode):
+    @pytest.mark.parametrize(
+        "testcode", ["raise RuntimeError", "pass", "print(1234)"]
+    )
+    def test_skipif_true(self, testdir, sphinx_tester, testcode):
         code = """
             .. testcode::
 
@@ -132,9 +134,10 @@ class TestDirectives:
 
                 NOT EVALUATED
             """.format(
-            "raise RuntimeError" if raise_in_testcode else "pass"
+            testcode
         )
 
+        raise_in_testcode = testcode != "pass"
         sphinx_output = sphinx_tester(code, must_raise=raise_in_testcode)
 
         # -> ignore the testoutput section if skipif evaluates to True, but

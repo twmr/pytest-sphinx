@@ -212,9 +212,7 @@ def docstring2examples(docstring, globs=None):
             want = _OPTION_DIRECTIVE_RE_SUB("", want)
         except SkippedOutputAssertion:
             options = {}
-            # by setting doctest.Example.want to None, we skip the
-            # output (want vs got) comparison
-            want = None
+            want = ""
         else:
             match = doctest.DocTestParser._EXCEPTION_RE.match(want)
             if match:
@@ -235,7 +233,7 @@ def docstring2examples(docstring, globs=None):
             ]
 
             num_unskipped_sections = len(
-                [d for d in section_data_seq if d[0] is not None]
+                [d for d in section_data_seq if d[0]]
             )
             if num_unskipped_sections > 1:
                 raise ValueError(
@@ -244,7 +242,7 @@ def docstring2examples(docstring, globs=None):
 
             if num_unskipped_sections:
                 want, options, _, exc_msg = next(
-                    d for d in section_data_seq if d[0] is not None
+                    d for d in section_data_seq if d[0]
                 )
                 # see comment below (where we use lineno -1)
                 lineno = section_data_seq[0][2]
@@ -253,7 +251,7 @@ def docstring2examples(docstring, globs=None):
                 # do we really need doctest.Example to test
                 # independent TESTCODE sections?
                 # TODO lineno may be wrong
-                want, options, lineno, exc_msg = None, {}, 1, None
+                want, options, lineno, exc_msg = "", {}, 1, None
 
             examples.append(
                 doctest.Example(
@@ -358,9 +356,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
             # If the example executed without raising any exceptions,
             # verify its output.
             if exception is None:
-                if example.want is None:
-                    outcome = SUCCESS
-                elif check(example.want, got, self.optionflags):
+                if check(example.want, got, self.optionflags):
                     outcome = SUCCESS
 
             # The example raised an exception:  check if it was expected.
