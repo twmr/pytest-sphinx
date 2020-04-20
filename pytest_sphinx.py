@@ -170,9 +170,10 @@ def docstring2examples(docstring, globs=None):
     matches.append(len(lines))
 
     class Section(object):
-        def __init__(self, name, content, lineno):
+        def __init__(self, name, content, lineno, group="default"):
             super(Section, self).__init__()
             self.name = name
+            self.group = group
             self.lineno = lineno
             if name in (
                 SphinxDoctestDirectives.TESTCODE,
@@ -207,7 +208,7 @@ def docstring2examples(docstring, globs=None):
         exc_msg = None
 
         try:
-            options = _find_options(want, "dummy", section.lineno, globs)
+            options = _find_options(want, section.group, section.lineno, globs)
             want = _OPTION_DIRECTIVE_RE_SUB("", want)
         except SkippedOutputAssertion:
             options = {}
