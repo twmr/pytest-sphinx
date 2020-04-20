@@ -42,21 +42,21 @@ def pytest_collect_file(path, parent):
     config = parent.config
     if path.ext == ".py":
         if config.option.doctestmodules:
-            if hasattr(SphinxDoctestModule, 'from_parent'):
+            if hasattr(SphinxDoctestModule, "from_parent"):
                 return SphinxDoctestModule.from_parent(parent, fspath=path)
             else:
                 return SphinxDoctestModule(path, parent)
     elif _is_doctest(config, path, parent):
-        if hasattr(SphinxDoctestTextfile, 'from_parent'):
+        if hasattr(SphinxDoctestTextfile, "from_parent"):
             return SphinxDoctestTextfile.from_parent(parent, fspath=path)
         else:
             return SphinxDoctestTextfile(path, parent)
 
 
 def _is_doctest(config, path, parent):
-    if path.ext in ('.txt', '.rst') and parent.session.isinitpath(path):
+    if path.ext in (".txt", ".rst") and parent.session.isinitpath(path):
         return True
-    globs = config.getoption("doctestglob") or ['test*.txt']
+    globs = config.getoption("doctestglob") or ["test*.txt"]
     for glob in globs:
         if path.check(fnmatch=glob):
             return True
@@ -66,14 +66,12 @@ def _is_doctest(config, path, parent):
 # This regular expression looks for option directives in the expected output
 # (testoutput) code of an example.  Option directives are comments starting
 # with ":options:".
-_OPTION_DIRECTIVE_RE = re.compile(r':options:\s*([^\n\'"]*)$',
-                                  re.MULTILINE)
+_OPTION_DIRECTIVE_RE = re.compile(r':options:\s*([^\n\'"]*)$', re.MULTILINE)
 
 
 # In order to compare the testoutput, containing Option directives we have
 # to remove the optiondirectives from the string after parsing.
-_OPTION_DIRECTIVE_RE_SUB = (
-    re.compile(r':options:\s*([^\n\'"]*)\n').sub)
+_OPTION_DIRECTIVE_RE_SUB = re.compile(r':options:\s*([^\n\'"]*)\n').sub
 
 
 def _find_options(want, name, lineno):
@@ -88,19 +86,23 @@ def _find_options(want, name, lineno):
     options = {}
     # (note: with the current regexp, this will match at most once:)
     for m in _OPTION_DIRECTIVE_RE.finditer(want):
-        option_strings = m.group(1).replace(',', ' ').split()
+        option_strings = m.group(1).replace(",", " ").split()
         for option in option_strings:
-            if (option[0] not in '+-' or
-                    option[1:] not in doctest.OPTIONFLAGS_BY_NAME):
-                raise ValueError('line %r of the doctest for %s '
-                                 'has an invalid option: %r' %
-                                 (lineno + 1, name, option))
+            if (
+                option[0] not in "+-"
+                or option[1:] not in doctest.OPTIONFLAGS_BY_NAME
+            ):
+                raise ValueError(
+                    "line %r of the doctest for %s "
+                    "has an invalid option: %r" % (lineno + 1, name, option)
+                )
             flag = doctest.OPTIONFLAGS_BY_NAME[option[1:]]
-            options[flag] = (option[0] == '+')
+            options[flag] = option[0] == "+"
     if options and doctest.DocTestParser._IS_BLANK_OR_COMMENT(want):
-        raise ValueError('line %r of the doctest for %s has an option '
-                         'directive on a line with no example: %r' %
-                         (lineno, name, want))
+        raise ValueError(
+            "line %r of the doctest for %s has an option "
+            "directive on a line with no example: %r" % (lineno, name, want)
+        )
     return options
 
 
@@ -112,9 +114,14 @@ def docstring2examples(docstring):
     # TODO subclass doctest.DocTestParser instead?
 
     lines = textwrap.dedent(docstring).splitlines()
-    matches = [i for i, line in enumerate(lines) if
-               any(line.strip().startswith('.. ' + d.name.lower() + '::')
-                   for d in SphinxDoctestDirectives)]
+    matches = [
+        i
+        for i, line in enumerate(lines)
+        if any(
+            line.strip().startswith(".. " + d.name.lower() + "::")
+            for d in SphinxDoctestDirectives
+        )
+    ]
     if not matches:
         return []
 
@@ -125,59 +132,68 @@ def docstring2examples(docstring):
             super(Section, self).__init__()
             self.name = name
             self.lineno = lineno
-            if name in (SphinxDoctestDirectives.TESTCODE,
-                        SphinxDoctestDirectives.TESTOUTPUT):
+            if name in (
+                SphinxDoctestDirectives.TESTCODE,
+                SphinxDoctestDirectives.TESTOUTPUT,
+            ):
                 # remove empty lines
-                self.content = '\n'.join(
-                    [line for line in content.splitlines()
-                     if not re.match(r'^\s*$', line)])
+                self.content = "\n".join(
+                    [
+                        line
+                        for line in content.splitlines()
+                        if not re.match(r"^\s*$", line)
+                    ]
+                )
             else:
                 self.content = content
 
     def is_empty_of_indented(line):
-        return not line or line.startswith('   ')
+        return not line or line.startswith("   ")
 
     sections = []
     for x, y in pairwise(matches):
         section = lines[x:y]
         header = section[0]
-        directive = next(d for d in SphinxDoctestDirectives
-                         if d.name.lower() in header)
-        out = '\n'.join(itertools.takewhile(
-            is_empty_of_indented, section[1:]))
-        sections.append(Section(
-            directive,
-            textwrap.dedent(out),
-            lineno=x))
+        directive = next(
+            d for d in SphinxDoctestDirectives if d.name.lower() in header
+        )
+        out = "\n".join(itertools.takewhile(is_empty_of_indented, section[1:]))
+        sections.append(Section(directive, textwrap.dedent(out), lineno=x))
 
     examples = []
     for x, y in pairwise(sections):
         # TODO support SphinxDoctestDirectives.TESTSETUP, ...
-        if (x.name == SphinxDoctestDirectives.TESTCODE and
-                y.name == SphinxDoctestDirectives.TESTOUTPUT):
+        if (
+            x.name == SphinxDoctestDirectives.TESTCODE
+            and y.name == SphinxDoctestDirectives.TESTOUTPUT
+        ):
 
             want = y.content
             m = doctest.DocTestParser._EXCEPTION_RE.match(want)
             if m:
-                exc_msg = m.group('msg')
+                exc_msg = m.group("msg")
             else:
                 exc_msg = None
 
-            options = _find_options(want, 'dummy', y.lineno)
+            options = _find_options(want, "dummy", y.lineno)
 
             # where should the :options: string be removed?
             # (only in the OutputChecker?, but then it is visible in the
             # pytest output in the "EXPECTED" section....
-            want = _OPTION_DIRECTIVE_RE_SUB('', want)
+            want = _OPTION_DIRECTIVE_RE_SUB("", want)
 
             examples.append(
-                doctest.Example(source=x.content, want=want,
-                                exc_msg=exc_msg,
-                                # we want to see the ..testcode lines in the
-                                # console output but not the ..testoutput
-                                # lines
-                                lineno=y.lineno - 1,
-                                options=options))
+                doctest.Example(
+                    source=x.content,
+                    want=want,
+                    exc_msg=exc_msg,
+                    # we want to see the ..testcode lines in the
+                    # console output but not the ..testoutput
+                    # lines
+                    lineno=y.lineno - 1,
+                    options=options,
+                )
+            )
 
     return examples
 
@@ -187,6 +203,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
     overwrite doctest.DocTestRunner.__run, since it uses 'single' for the
     `compile` function instead of 'exec'.
     """
+
     def _DocTestRunner__run(self, test, compileflags, out):
         """
         Run the examples in `test`.
@@ -216,8 +233,10 @@ class SphinxDocTestRunner(doctest.DebugRunner):
 
             # If REPORT_ONLY_FIRST_FAILURE is set, then suppress
             # reporting after the first failure.
-            quiet = (self.optionflags & doctest.REPORT_ONLY_FIRST_FAILURE and
-                     failures > 0)
+            quiet = (
+                self.optionflags & doctest.REPORT_ONLY_FIRST_FAILURE
+                and failures > 0
+            )
 
             # Merge in the example's options.
             self.optionflags = original_optionflags
@@ -240,15 +259,17 @@ class SphinxDocTestRunner(doctest.DebugRunner):
             # Use a special filename for compile(), so we can retrieve
             # the source code during interactive debugging (see
             # __patched_linecache_getlines).
-            filename = '<doctest %s[%d]>' % (test.name, examplenum)
+            filename = "<doctest %s[%d]>" % (test.name, examplenum)
 
             # Run the example in the given context (globs), and record
             # any exception that gets raised.  (But don't intercept
             # keyboard interrupts.)
             try:
                 # Don't blink!  This is where the user's code gets run.
-                exec(compile(example.source, filename, "exec",
-                             compileflags, 1), test.globs)
+                exec(
+                    compile(example.source, filename, "exec", compileflags, 1),
+                    test.globs,
+                )
                 self.debugger.set_continue()  # ==== Example Finished ====
                 exception = None
             except KeyboardInterrupt:
@@ -259,7 +280,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
 
             got = self._fakeout.getvalue()  # the actual output
             self._fakeout.truncate(0)
-            outcome = FAILURE   # guilty until proved innocent or insane
+            outcome = FAILURE  # guilty until proved innocent or insane
 
             # If the example executed without raising any exceptions,
             # verify its output.
@@ -284,9 +305,11 @@ class SphinxDocTestRunner(doctest.DebugRunner):
 
                 # Another chance if they didn't care about the detail.
                 elif self.optionflags & doctest.IGNORE_EXCEPTION_DETAIL:
-                    if check(doctest._strip_exception_details(example.exc_msg),
-                             doctest._strip_exception_details(exc_msg),
-                             self.optionflags):
+                    if check(
+                        doctest._strip_exception_details(example.exc_msg),
+                        doctest._strip_exception_details(exc_msg),
+                        self.optionflags,
+                    ):
                         outcome = SUCCESS
 
             # Report the outcome.
@@ -299,8 +322,9 @@ class SphinxDocTestRunner(doctest.DebugRunner):
                 failures += 1
             elif outcome is BOOM:
                 if not quiet:
-                    self.report_unexpected_exception(out, test, example,
-                                                     exception)
+                    self.report_unexpected_exception(
+                        out, test, example, exception
+                    )
                 failures += 1
             else:
                 assert False, ("unknown outcome", outcome)
@@ -319,12 +343,14 @@ class SphinxDocTestRunner(doctest.DebugRunner):
 class SphinxDocTestParser(object):
     def get_doctest(self, docstring, globs, name, filename, lineno):
         # TODO document why we need to overwrite? get_doctest
-        return doctest.DocTest(examples=docstring2examples(docstring),
-                               globs=globs,
-                               name=name,
-                               filename=filename,
-                               lineno=lineno,
-                               docstring=docstring)
+        return doctest.DocTest(
+            examples=docstring2examples(docstring),
+            globs=globs,
+            name=name,
+            filename=filename,
+            lineno=lineno,
+            docstring=docstring,
+        )
 
 
 class SphinxDoctestTextfile(pytest.Module):
@@ -338,24 +364,28 @@ class SphinxDoctestTextfile(pytest.Module):
         name = self.fspath.basename
 
         optionflags = _pytest.doctest.get_optionflags(self)
-        runner = SphinxDocTestRunner(verbose=0,
-                                     optionflags=optionflags,
-                                     checker=_pytest.doctest._get_checker())
+        runner = SphinxDocTestRunner(
+            verbose=0,
+            optionflags=optionflags,
+            checker=_pytest.doctest._get_checker(),
+        )
 
-        test = doctest.DocTest(examples=docstring2examples(text),
-                               globs={},
-                               name=name,
-                               filename=name,
-                               lineno=0,
-                               docstring=text)
+        test = doctest.DocTest(
+            examples=docstring2examples(text),
+            globs={},
+            name=name,
+            filename=name,
+            lineno=0,
+            docstring=text,
+        )
 
         if test.examples:
-            if hasattr(DoctestItem, 'from_parent'):
+            if hasattr(DoctestItem, "from_parent"):
                 yield DoctestItem.from_parent(
-                    parent=self, name=test.name, runner=runner, dtest=test)
+                    parent=self, name=test.name, runner=runner, dtest=test
+                )
             else:
-                yield DoctestItem(
-                    test.name, self, runner, test)
+                yield DoctestItem(test.name, self, runner, test)
 
 
 class SphinxDoctestModule(pytest.Module):
@@ -366,8 +396,8 @@ class SphinxDoctestModule(pytest.Module):
             try:
                 module = self.fspath.pyimport()
             except ImportError:
-                if self.config.getvalue('doctest_ignore_import_errors'):
-                    pytest.skip('unable to import module %r' % self.fspath)
+                if self.config.getvalue("doctest_ignore_import_errors"):
+                    pytest.skip("unable to import module %r" % self.fspath)
                 else:
                     raise
         optionflags = _pytest.doctest.get_optionflags(self)
@@ -382,14 +412,21 @@ class SphinxDoctestModule(pytest.Module):
             fix taken from https://github.com/pytest-dev/pytest/pull/4212/
             """
 
-            def _find(self, tests, obj, name, module, source_lines,
-                      globs, seen):
+            def _find(
+                self, tests, obj, name, module, source_lines, globs, seen
+            ):
                 if _is_mocked(obj):
                     return
                 with _patch_unwrap_mock_aware():
                     doctest.DocTestFinder._find(
-                        self, tests, obj, name, module, source_lines, globs,
-                        seen
+                        self,
+                        tests,
+                        obj,
+                        name,
+                        module,
+                        source_lines,
+                        globs,
+                        seen,
                     )
 
         try:
@@ -400,15 +437,17 @@ class SphinxDoctestModule(pytest.Module):
         else:
             finder = MockAwareDocTestFinder(parser=SphinxDocTestParser())
 
-        runner = SphinxDocTestRunner(verbose=0,
-                                     optionflags=optionflags,
-                                     checker=_pytest.doctest._get_checker())
+        runner = SphinxDocTestRunner(
+            verbose=0,
+            optionflags=optionflags,
+            checker=_pytest.doctest._get_checker(),
+        )
 
         for test in finder.find(module, module.__name__):
             if test.examples:
-                if hasattr(DoctestItem, 'from_parent'):
+                if hasattr(DoctestItem, "from_parent"):
                     yield DoctestItem.from_parent(
-                        parent=self, name=test.name, runner=runner, dtest=test)
+                        parent=self, name=test.name, runner=runner, dtest=test
+                    )
                 else:
-                    yield DoctestItem(
-                        test.name, self, runner, test)
+                    yield DoctestItem(test.name, self, runner, test)
