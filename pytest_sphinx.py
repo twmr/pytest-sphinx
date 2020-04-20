@@ -70,69 +70,65 @@ def _is_doctest(config, path, parent):
 # This regular expression looks for option directives in the expected output
 # (testoutput) code of an example.  Option directives are comments starting
 # with ":options:".
-_OPTION_DIRECTIVE_RE = re.compile(r':options:\s*([^\n\'"]*)$', re.MULTILINE)
-
-_OPTION_SKIPIF_RE = re.compile(r':skipif:\s*([^\n\'"]*)$', re.MULTILINE)
-
-
-# In order to compare the testoutput, containing Option directives
-# (including skipif) we have to remove the optiondirectives from the string
-# after parsing.
-_OPTION_DIRECTIVE_RE_SUB = re.compile(
-    r':(options|skipif):\s*([^\n\'"]*)\n'
-).sub
+_OPTION_DIRECTIVE_RE = re.compile(r':options:\s*([^\n\'"]*)$')
+_OPTION_SKIPIF_RE = re.compile(r':skipif:\s*([^\n\'"]*)$')
 
 
-def _find_options(want, name, lineno, globs):
-    """
-    Return a dictionary containing option overrides extracted from option
-    directives in the given `want` string.
+class Options:
+    def __init__(self, flags, hide, skipif_expr):
+        self.flags = flags
+        self.hide = hide
+        self.skipif_expr = skipif_expr
 
-    Parameters
-    ----------
-    want : str
-        text that is part of the `testoutput` block.
-    name : str
-    lineno : int
-        line number where the example starts.
-    globs : dict
-        globals used for evaluating expressions in the "skipif" option.
 
-    Raises
-    ------
-    SkippedOutputAssertion
-        If the `want` string contains ":skipif:", whose expression evaluates
-        to True.
+class Section:
+    def __init__(self, name, content, lineno, group="default"):
+        self.name = name
+        self.group = group
+        self.lineno = lineno
+        content, options = _extract_options(content.strip())
+        self.content = content
+        self.options = options
 
-    """
-    options = {}
-    # (note: with the current regexp, this will match at most once:)
-    for m in _OPTION_DIRECTIVE_RE.finditer(want):
-        option_strings = m.group(1).replace(",", " ").split()
-        for option in option_strings:
-            if (
-                option[0] not in "+-"
-                or option[1:] not in doctest.OPTIONFLAGS_BY_NAME
-            ):
-                raise ValueError(
-                    "line %r of the doctest for %s "
-                    "has an invalid option: %r" % (lineno + 1, name, option)
-                )
-            flag = doctest.OPTIONFLAGS_BY_NAME[option[1:]]
-            options[flag] = option[0] == "+"
 
-    if options and doctest.DocTestParser._IS_BLANK_OR_COMMENT(want):
-        raise ValueError(
-            "line %r of the doctest for %s has an option "
-            "directive on a line with no example: %r" % (lineno, name, want)
-        )
+def _extract_options(section_content):
+    lines = section_content.strip().splitlines()
+    # iterate over lines and remove the ones that contain options
+    # once a newline is found, stop and return test of the lines (stripped)
 
-    for m in _OPTION_SKIPIF_RE.finditer(want):
-        skipif_expr = m.group(1)
-        if eval(skipif_expr, globs):
-            raise SkippedOutputAssertion
+    hide = False
+    skipif_expr = None
+    flag_settings = {}
+    i = 0
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if _OPTION_SKIPIF_RE.match(stripped):
+            skipif_expr = _OPTION_SKIPIF_RE.match(stripped).group(1)
+        elif stripped == ":hide:":
+            hide = True
+        elif _OPTION_DIRECTIVE_RE.match(stripped):
+            option_strings = (
+                _OPTION_DIRECTIVE_RE.match(stripped)
+                .group(1)
+                .replace(",", " ")
+                .split()
+            )
+            for option in option_strings:
+                if (
+                    option[0] not in "+-"
+                    or option[1:] not in doctest.OPTIONFLAGS_BY_NAME
+                ):
+                    raise ValueError(
+                        "doctest " "has an invalid option {}".format(option)
+                    )
+                flag = doctest.OPTIONFLAGS_BY_NAME[option[1:]]
+                flag_settings[flag] = option[0] == "+"
+        else:
+            break
 
-    return options
+    remaining = "\n".join(lines[i:]).lstrip()
+    options = Options(flags=flag_settings, skipif_expr=skipif_expr, hide=hide)
+    return remaining, options
 
 
 def _get_next_textoutputsections(sections, index):
@@ -169,27 +165,6 @@ def docstring2examples(docstring, globs=None):
 
     matches.append(len(lines))
 
-    class Section(object):
-        def __init__(self, name, content, lineno, group="default"):
-            super(Section, self).__init__()
-            self.name = name
-            self.group = group
-            self.lineno = lineno
-            if name in (
-                SphinxDoctestDirectives.TESTCODE,
-                SphinxDoctestDirectives.TESTOUTPUT,
-            ):
-                # remove empty lines
-                self.content = "\n".join(
-                    [
-                        line
-                        for line in content.splitlines()
-                        if not re.match(r"^\s*$", line)
-                    ]
-                )
-            else:
-                self.content = content
-
     def is_empty_of_indented(line):
         return not line or line.startswith("   ")
 
@@ -204,21 +179,19 @@ def docstring2examples(docstring, globs=None):
         sections.append(Section(directive, textwrap.dedent(out), lineno=x))
 
     def get_testoutput_section_data(section):
-        want = section.content
         exc_msg = None
 
-        try:
-            options = _find_options(want, section.group, section.lineno, globs)
-            want = _OPTION_DIRECTIVE_RE_SUB("", want)
-        except SkippedOutputAssertion:
-            options = {}
+        if section.options.skipif_expr and eval(
+            section.options.skipif_expr, globs
+        ):
             want = ""
         else:
+            want = section.content
             match = doctest.DocTestParser._EXCEPTION_RE.match(want)
             if match:
                 exc_msg = match.group("msg")
 
-        return want, options, section.lineno, exc_msg
+        return want, section.options.flags, section.lineno, exc_msg
 
     examples = []
     for i, current_section in enumerate(sections):

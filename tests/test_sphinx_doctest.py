@@ -17,24 +17,25 @@ pytestmark = pytest.mark.skipif(
 class SphinxDoctestRunner:
     def __init__(self, tmpdir):
         self.tmpdir = tmpdir
-        subprocess.check_output(
-            [
-                "sphinx-quickstart",
-                "-v",
-                "0.1",
-                "-r",
-                "0.1",
-                "-l",
-                "en",
-                "-a",
-                "my.name",
-                "--ext-doctest",  # enable doctest extension
-                "--sep",
-                "-p",
-                "demo",
-                ".",
-            ]
-        )
+        quickstart_cmd = [
+            "sphinx-quickstart",
+            "-v",
+            "0.1",
+            "-r",
+            "0.1",
+            "-l",
+            "en",
+            "-a",
+            "my.name",
+            "--ext-doctest",  # enable doctest extension
+            "--sep",
+            "-p",
+            "demo",
+            ".",
+        ]
+
+        logger.info("running cmd %s", " ".join(quickstart_cmd))
+        subprocess.check_output(quickstart_cmd)
 
     def __call__(self, rst_file_content, must_raise=False, sphinxopts=None):
         index_rst = self.tmpdir.join("source").join("index.rst")
@@ -98,6 +99,34 @@ def test_simple_doctest_success(sphinx_tester):
         >>> 3 + 3
         6
         """
+    )
+    assert "1 items passed all tests" in output
+
+
+def test_short(sphinx_tester):
+    output = sphinx_tester(
+        """
+
+            .. testcode:: g1
+
+                print(1234)
+
+            .. testoutput:: g1
+                :skipif: True
+                abc
+
+            .. testcode:: g2
+
+                print(12345)
+
+            .. testoutput:: g2
+                :options: +NORMALIZE_WHITESPACE
+                :skipif: True
+                1
+                2
+
+        """,
+        must_raise=True,
     )
     assert "1 items passed all tests" in output
 
