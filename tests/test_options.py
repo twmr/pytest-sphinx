@@ -40,7 +40,8 @@ def test_multiline_code():
         {'a':    3,
          'b':   44,
          'c':   20}
-        """)
+        """
+    )
     ret = _split_sections_into_content_and_options(want)
     assert ret[0] == "{'a':    3,\n 'b':   44,\n 'c':   20}"
     assert ret[1] is None
@@ -57,7 +58,8 @@ def test_hide():
         :hide:
 
         code
-        """)
+        """
+    )
     ret = _split_sections_into_content_and_options(want)
     assert ret[0] == "code"
     assert ret[1] is None

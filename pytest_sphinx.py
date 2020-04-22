@@ -128,7 +128,7 @@ def _split_sections_into_content_and_options(section_content):
                 flag = doctest.OPTIONFLAGS_BY_NAME[option[1:]]
                 flag_settings[flag] = option[0] == "+"
             i += 1
-        elif stripped == ':hide:':
+        elif stripped == ":hide:":
             i += 1
         else:
             break
