@@ -4,30 +4,27 @@ import six
 
 import pytest
 
-from pytest_sphinx import _find_options
+from pytest_sphinx import _split_sections_into_content_and_options
 from pytest_sphinx import SkippedOutputAssertion
 
 
 def test_only_options():
-    want = textwrap.dedent(
-        """
-        :options: +NORMALIZE_WHITESPACE
-    """
-    )
+    want = "\n:options: +NORMALIZE_WHITESPACE\n"
 
-    ret = _find_options(want, "dummy", 10, {})
-    assert ret == {4: True}
+    ret = _split_sections_into_content_and_options(want)
+    assert ret[1] is None
+    assert ret[2] == {4: True}
 
 
 def test_mulitple_options():
-    want = textwrap.dedent(
-        """
-        :options: +NORMALIZE_WHITESPACE, -ELLIPSIS
-    """
-    )
+    want = "\n:options: +NORMALIZE_WHITESPACE, -ELLIPSIS\n"
 
-    ret = _find_options(want, "dummy", 10, {})
-    assert ret == {doctest.NORMALIZE_WHITESPACE: True, doctest.ELLIPSIS: False}
+    ret = _split_sections_into_content_and_options(want)
+    assert ret[1] is None
+    assert ret[2] == {
+        doctest.NORMALIZE_WHITESPACE: True,
+        doctest.ELLIPSIS: False,
+    }
 
 
 def test_options_and_text():
@@ -40,13 +37,13 @@ def test_options_and_text():
     """
     )
 
-    ret = _find_options(want, "dummy", 10, {})
-    assert ret == {4: True}
+    ret = _split_sections_into_content_and_options(want)
+    assert ret == ("abcedf\nabcedf", None, {4: True})
 
 
-@pytest.mark.parametrize("expr,expected_skip", [("True", True)])
+@pytest.mark.parametrize("expr", ["True"])
 @pytest.mark.parametrize("with_options", [True, False])
-def test_skipif_and_text(expr, expected_skip, with_options):
+def test_skipif_and_text(expr, with_options):
     want = textwrap.dedent(
         """
         :skipif: {}
@@ -60,16 +57,13 @@ def test_skipif_and_text(expr, expected_skip, with_options):
     if with_options:
         want = "\n:options: +NORMALIZE_WHITESPACE" + want
 
-    if expected_skip:
-        with pytest.raises(SkippedOutputAssertion):
-            ret = _find_options(want, "dummy", 10, {"six": six})
+    ret = _split_sections_into_content_and_options(want)
+    assert ret[0] == "abcedf\nabcedf"
+    assert ret[1] == expr
+    if with_options:
+        assert ret[2] == {doctest.NORMALIZE_WHITESPACE: True}
     else:
-        ret = _find_options(want, "dummy", 10, {"six": six})
-
-        if with_options:
-            assert ret == {doctest.NORMALIZE_WHITESPACE: True}
-        else:
-            assert ret == {}
+        assert ret[2] == {}
 
 
 def test_check_output_with_whitespace_normalization():

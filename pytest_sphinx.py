@@ -119,37 +119,6 @@ def _split_sections_into_content_and_options(section_content):
     return remaining, skipif_expr, flag_settings
 
 
-def _find_options(want, name, lineno, globs):
-    """
-    Return a dictionary containing option overrides extracted from option
-    directives in the given `want` string.
-
-    Parameters
-    ----------
-    want : str
-        text that is part of the `testoutput` block.
-    name : str
-    lineno : int
-        line number where the example starts.
-    globs : dict
-        globals used for evaluating expressions in the "skipif" option.
-
-    Raises
-    ------
-    SkippedOutputAssertion
-        If the `want` string contains ":skipif:", whose expression evaluates
-        to True.
-
-    """
-
-    want, skipif_expr, options = _split_sections_into_content_and_options(want)
-
-    if skipif_expr and eval(skipif_expr, globs):
-        raise SkippedOutputAssertion
-
-    return options
-
-
 def _get_next_textoutputsections(sections, index):
     """Yield successive TESTOUTPUT sections."""
     for j in range(index, len(sections)):
@@ -222,10 +191,11 @@ def docstring2examples(docstring, globs=None):
         want = section.content
         exc_msg = None
 
-        try:
-            options = _find_options(want, section.group, section.lineno, globs)
-            want, _, _ = _split_sections_into_content_and_options(want)
-        except SkippedOutputAssertion:
+        want, skipif_expr, options = _split_sections_into_content_and_options(
+            want
+        )
+
+        if skipif_expr and eval(skipif_expr, globs):
             options = {}
             want = ""
         else:
