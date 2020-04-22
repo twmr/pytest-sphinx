@@ -227,16 +227,17 @@ def docstring2examples(docstring, globs=None):
     def get_testoutput_section_data(section):
         want = section.body
         exc_msg = None
+        options = {}
 
         if section.skipif_expr and eval(section.skipif_expr, globs):
-            options = {}
             want = ""
         else:
+            options = section.options
             match = doctest.DocTestParser._EXCEPTION_RE.match(want)
             if match:
                 exc_msg = match.group("msg")
 
-        return want, section.options, section.lineno, exc_msg
+        return want, options, section.lineno, exc_msg
 
     examples = []
     for i, current_section in enumerate(sections):
