@@ -29,11 +29,6 @@ def pairwise(iterable):
     return list(zip(a, b))
 
 
-class SkippedOutputAssertion(Exception):
-    # only used for the testoutput directive
-    pass
-
-
 class SphinxDoctestDirectives(enum.Enum):
     TESTCODE = 1
     TESTOUTPUT = 2

@@ -1,18 +1,16 @@
 import textwrap
 import doctest
-import six
 
 import pytest
 
 from pytest_sphinx import _split_sections_into_content_and_options
-from pytest_sphinx import SkippedOutputAssertion
 
 
 def test_only_options_empty_body():
     want = "\n:options: +NORMALIZE_WHITESPACE\n"
 
     with pytest.raises(ValueError, match="no code/output"):
-        abc = _split_sections_into_content_and_options(want)
+        _split_sections_into_content_and_options(want)
 
 
 def test_only_options_nonewline():
