@@ -58,7 +58,7 @@ def test_skipif_and_text(expr, expected_skip, with_options):
         )
     )
     if with_options:
-        want = "\n:options: +NORMALIZE_WHITESPACE\n" + want
+        want = "\n:options: +NORMALIZE_WHITESPACE" + want
 
     if expected_skip:
         with pytest.raises(SkippedOutputAssertion):

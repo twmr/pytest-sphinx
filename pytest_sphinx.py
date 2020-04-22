@@ -70,17 +70,53 @@ def _is_doctest(config, path, parent):
 # This regular expression looks for option directives in the expected output
 # (testoutput) code of an example.  Option directives are comments starting
 # with ":options:".
-_OPTION_DIRECTIVE_RE = re.compile(r':options:\s*([^\n\'"]*)$', re.MULTILINE)
+_OPTION_DIRECTIVE_RE = re.compile(r':options:\s*([^\n\'"]*)$')
+_OPTION_SKIPIF_RE = re.compile(r':skipif:\s*([^\n\'"]*)$')
 
-_OPTION_SKIPIF_RE = re.compile(r':skipif:\s*([^\n\'"]*)$', re.MULTILINE)
 
+def _split_sections_into_content_and_options(section_content):
+    """Parse the the full content of a directive and split it.
 
-# In order to compare the testoutput, containing Option directives
-# (including skipif) we have to remove the optiondirectives from the string
-# after parsing.
-_OPTION_DIRECTIVE_RE_SUB = re.compile(
-    r':(options|skipif):\s*([^\n\'"]*)\n'
-).sub
+    It is split into a string, where the options (:options: and :skipif:)
+    are removed, and into options.
+
+    If there are options in `section_content`, they have to appear at the
+    very beginning. The first line that is not an option (:options: and
+    :skipif:) is the first line of the string that is returned
+    (`remaining`).
+
+    """
+    lines = section_content.strip().splitlines()
+
+    skipif_expr = None
+    flag_settings = {}
+    i = 0
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if _OPTION_SKIPIF_RE.match(stripped):
+            skipif_expr = _OPTION_SKIPIF_RE.match(stripped).group(1)
+        elif _OPTION_DIRECTIVE_RE.match(stripped):
+            option_strings = (
+                _OPTION_DIRECTIVE_RE.match(stripped)
+                .group(1)
+                .replace(",", " ")
+                .split()
+            )
+            for option in option_strings:
+                if (
+                    option[0] not in "+-"
+                    or option[1:] not in doctest.OPTIONFLAGS_BY_NAME
+                ):
+                    raise ValueError(
+                        "doctest " "has an invalid option {}".format(option)
+                    )
+                flag = doctest.OPTIONFLAGS_BY_NAME[option[1:]]
+                flag_settings[flag] = option[0] == "+"
+        else:
+            break
+
+    remaining = "\n".join(lines[i:]).lstrip()
+    return remaining, skipif_expr, flag_settings
 
 
 def _find_options(want, name, lineno, globs):
@@ -105,32 +141,11 @@ def _find_options(want, name, lineno, globs):
         to True.
 
     """
-    options = {}
-    # (note: with the current regexp, this will match at most once:)
-    for m in _OPTION_DIRECTIVE_RE.finditer(want):
-        option_strings = m.group(1).replace(",", " ").split()
-        for option in option_strings:
-            if (
-                option[0] not in "+-"
-                or option[1:] not in doctest.OPTIONFLAGS_BY_NAME
-            ):
-                raise ValueError(
-                    "line %r of the doctest for %s "
-                    "has an invalid option: %r" % (lineno + 1, name, option)
-                )
-            flag = doctest.OPTIONFLAGS_BY_NAME[option[1:]]
-            options[flag] = option[0] == "+"
 
-    if options and doctest.DocTestParser._IS_BLANK_OR_COMMENT(want):
-        raise ValueError(
-            "line %r of the doctest for %s has an option "
-            "directive on a line with no example: %r" % (lineno, name, want)
-        )
+    want, skipif_expr, options = _split_sections_into_content_and_options(want)
 
-    for m in _OPTION_SKIPIF_RE.finditer(want):
-        skipif_expr = m.group(1)
-        if eval(skipif_expr, globs):
-            raise SkippedOutputAssertion
+    if skipif_expr and eval(skipif_expr, globs):
+        raise SkippedOutputAssertion
 
     return options
 
@@ -209,7 +224,7 @@ def docstring2examples(docstring, globs=None):
 
         try:
             options = _find_options(want, section.group, section.lineno, globs)
-            want = _OPTION_DIRECTIVE_RE_SUB("", want)
+            want, _, _ = _split_sections_into_content_and_options(want)
         except SkippedOutputAssertion:
             options = {}
             want = ""
