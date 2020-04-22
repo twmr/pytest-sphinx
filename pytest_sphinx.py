@@ -37,6 +37,19 @@ class SphinxDoctestDirectives(enum.Enum):
     DOCTEST = 5
 
 
+_DIRECTIVES_W_OPTIONS = (
+    SphinxDoctestDirectives.TESTOUTPUT,
+    SphinxDoctestDirectives.DOCTEST,
+)
+_DIRECTIVES_W_SKIPIF = (
+    SphinxDoctestDirectives.TESTCODE,
+    SphinxDoctestDirectives.TESTOUTPUT,
+    SphinxDoctestDirectives.TESTSETUP,
+    SphinxDoctestDirectives.TESTCLEANUP,
+    SphinxDoctestDirectives.DOCTEST,
+)
+
+
 def pytest_collect_file(path, parent):
     config = parent.config
     if path.ext == ".py":
@@ -187,7 +200,19 @@ def docstring2examples(docstring, globs=None):
             self.directive = directive
             self.group = group
             self.lineno = lineno
-            self.content = content
+            body, skipif_expr, options = _split_into_body_and_options(content)
+
+            if skipif_expr and self.directive not in _DIRECTIVES_W_SKIPIF:
+                raise ValueError(
+                    ":skipif: not allowed in {}".format(self.directive)
+                )
+            if options and self.directive not in _DIRECTIVES_W_OPTIONS:
+                raise ValueError(
+                    ":options: not allowed in {}".format(self.directive)
+                )
+            self.body = body
+            self.skipif_expr = skipif_expr
+            self.options = options
 
     sections = []
     for x, y in pairwise(matches):
@@ -200,14 +225,10 @@ def docstring2examples(docstring, globs=None):
         sections.append(Section(directive, textwrap.dedent(out), lineno=x))
 
     def get_testoutput_section_data(section):
-        want = section.content
+        want = section.body
         exc_msg = None
 
-        want, skipif_expr, options = _split_into_body_and_options(
-            want
-        )
-
-        if skipif_expr and eval(skipif_expr, globs):
+        if section.skipif_expr and eval(section.skipif_expr, globs):
             options = {}
             want = ""
         else:
@@ -215,7 +236,7 @@ def docstring2examples(docstring, globs=None):
             if match:
                 exc_msg = match.group("msg")
 
-        return want, options, section.lineno, exc_msg
+        return want, section.options, section.lineno, exc_msg
 
     examples = []
     for i, current_section in enumerate(sections):
@@ -250,7 +271,7 @@ def docstring2examples(docstring, globs=None):
 
             examples.append(
                 doctest.Example(
-                    source=current_section.content,
+                    source=current_section.body,
                     want=want,
                     exc_msg=exc_msg,
                     # we want to see the ..testcode lines in the
