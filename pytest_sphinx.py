@@ -175,7 +175,7 @@ def docstring2examples(docstring, globs=None):
         i
         for i, line in enumerate(lines)
         if any(
-            line.strip().startswith(".. " + d.name.lower() + "::")
+            line.lstrip().startswith(".. " + d.name.lower() + "::")
             for d in SphinxDoctestDirectives
         )
     ]
