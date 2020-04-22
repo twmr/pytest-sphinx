@@ -8,22 +8,46 @@ from pytest_sphinx import _split_sections_into_content_and_options
 from pytest_sphinx import SkippedOutputAssertion
 
 
-def test_only_options():
+def test_only_options_empty_body():
     want = "\n:options: +NORMALIZE_WHITESPACE\n"
 
-    ret = _split_sections_into_content_and_options(want)
-    assert ret[1] is None
-    assert ret[2] == {4: True}
+    with pytest.raises(ValueError, match="no code/output"):
+        abc = _split_sections_into_content_and_options(want)
+
+
+def test_only_options_nonewline():
+    want = "\n:options: +NORMALIZE_WHITESPACE\ncodeblock"
+
+    with pytest.raises(ValueError, match="invalid option block"):
+        _split_sections_into_content_and_options(want)
 
 
 def test_mulitple_options():
-    want = "\n:options: +NORMALIZE_WHITESPACE, -ELLIPSIS\n"
+    want = "\n:options: +NORMALIZE_WHITESPACE, -ELLIPSIS\n\ncodeblock"
 
     ret = _split_sections_into_content_and_options(want)
+    assert ret[0] == "codeblock"
     assert ret[1] is None
     assert ret[2] == {
         doctest.NORMALIZE_WHITESPACE: True,
         doctest.ELLIPSIS: False,
+    }
+
+
+def test_multiline_code():
+    want = textwrap.dedent(
+        """
+        :options: +NORMALIZE_WHITESPACE
+
+        {'a':    3,
+         'b':   44,
+         'c':   20}
+        """)
+    ret = _split_sections_into_content_and_options(want)
+    assert ret[0] == "{'a':    3,\n 'b':   44,\n 'c':   20}"
+    assert ret[1] is None
+    assert ret[2] == {
+        doctest.NORMALIZE_WHITESPACE: True,
     }
 
 

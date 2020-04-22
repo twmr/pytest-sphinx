@@ -82,8 +82,27 @@ def _split_sections_into_content_and_options(section_content):
 
     If there are options in `section_content`, they have to appear at the
     very beginning. The first line that is not an option (:options: and
-    :skipif:) is the first line of the string that is returned
-    (`remaining`).
+    :skipif:) and not a newline is the first line of the string that is
+    returned (`remaining`).
+
+    Parameters
+    ----------
+    section_content : str
+        String consisting of (optional) options like :skipif: and :options:,
+        and of a body.
+
+    Returns
+    -------
+    remaining : str
+    skipif_expr : str or None
+    flag_settings : dict
+
+    Raises
+    ------
+    ValueError
+        * If options and the body of the section are not
+        separated by a newline.
+        * If the body of the section is empty.
 
     """
     lines = section_content.strip().splitlines()
@@ -91,10 +110,11 @@ def _split_sections_into_content_and_options(section_content):
     skipif_expr = None
     flag_settings = {}
     i = 0
-    for i, line in enumerate(lines):
+    for line in lines:
         stripped = line.strip()
         if _OPTION_SKIPIF_RE.match(stripped):
             skipif_expr = _OPTION_SKIPIF_RE.match(stripped).group(1)
+            i += 1
         elif _OPTION_DIRECTIVE_RE.match(stripped):
             option_strings = (
                 _OPTION_DIRECTIVE_RE.match(stripped)
@@ -112,10 +132,21 @@ def _split_sections_into_content_and_options(section_content):
                     )
                 flag = doctest.OPTIONFLAGS_BY_NAME[option[1:]]
                 flag_settings[flag] = option[0] == "+"
+            i += 1
         else:
             break
 
+    if i == len(lines):
+        raise ValueError("no code/output")
+
     remaining = "\n".join(lines[i:]).lstrip()
+    if not remaining:
+        raise ValueError("no code/output")
+
+    if i and lines[i].strip():
+        # no newline between option block and body
+        raise ValueError("invalid option block: {!r}".format(section_content))
+
     return remaining, skipif_expr, flag_settings
 
 
@@ -159,23 +190,7 @@ def docstring2examples(docstring, globs=None):
             self.name = name
             self.group = group
             self.lineno = lineno
-            if name in (
-                SphinxDoctestDirectives.TESTCODE,
-                SphinxDoctestDirectives.TESTOUTPUT,
-            ):
-                # remove empty lines
-                self.content = "\n".join(
-                    [
-                        line
-                        for line in content.splitlines()
-                        if not re.match(r"^\s*$", line)
-                    ]
-                )
-            else:
-                self.content = content
-
-    def is_empty_of_indented(line):
-        return not line or line.startswith("   ")
+            self.content = content
 
     sections = []
     for x, y in pairwise(matches):
@@ -184,7 +199,7 @@ def docstring2examples(docstring, globs=None):
         directive = next(
             d for d in SphinxDoctestDirectives if d.name.lower() in header
         )
-        out = "\n".join(itertools.takewhile(is_empty_of_indented, section[1:]))
+        out = "\n".join(section[1:])
         sections.append(Section(directive, textwrap.dedent(out), lineno=x))
 
     def get_testoutput_section_data(section):
