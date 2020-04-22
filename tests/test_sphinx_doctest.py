@@ -1,5 +1,6 @@
 """ Run tests that call "sphinx-build -M doctest". """
 import logging
+import os
 import subprocess
 import sys
 import textwrap
@@ -40,6 +41,7 @@ class SphinxDoctestRunner:
         index_rst = self.tmpdir.join("source").join("index.rst")
         rst_file_content = textwrap.dedent(rst_file_content)
         index_rst.write(rst_file_content)
+        logger.info("CWD: %s", os.getcwd())
         logger.info("content of index.rst:\n%s", rst_file_content)
 
         cmd = ["sphinx-build", "-M", "doctest", "source", ""]
