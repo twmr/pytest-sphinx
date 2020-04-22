@@ -28,6 +28,7 @@ Features
   ``pytest.ini``
 * support for ``:options:`` in ``testoutput``
 * support for ``:skipif:`` in ``testoutput``
+* ``:hide:`` is ignored by "pytest-sphinx"
 
 
 Requirements
