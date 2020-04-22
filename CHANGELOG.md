@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Adapt to Node API changes in pytest-5.4 (Fixes #11)
 - Add support for python 3.8 (Fixes #15)
 - Add support for skipif option in testoutput directive (Fixes #17)
+- Add support for skipif option in testcode directive (Fixes #21)
 - A ValueError is raised if the text inside the directives is not properly
   formatted.
 - Ignore the option :hide: in directives (Fixes #19)

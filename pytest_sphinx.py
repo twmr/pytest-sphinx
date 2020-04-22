@@ -270,6 +270,13 @@ def docstring2examples(docstring, globs=None):
                 # TODO lineno may be wrong
                 want, options, lineno, exc_msg = "", {}, 1, None
 
+            if current_section.skipif_expr and eval(
+                current_section.skipif_expr, globs
+            ):
+                # TODO add the doctest.Example to `examples` but mark it as
+                # skipped.
+                continue
+
             examples.append(
                 doctest.Example(
                     source=current_section.body,

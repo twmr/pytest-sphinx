@@ -27,7 +27,7 @@ Features
 * support for parsing global optionflags (``doctest_optionflags``) from
   ``pytest.ini``
 * support for ``:options:`` in ``testoutput``
-* support for ``:skipif:`` in ``testoutput``
+* support for ``:skipif:`` in ``testcode`` and in ``testoutput``
 * ``:hide:`` is ignored by "pytest-sphinx"
 
 
