@@ -222,3 +222,27 @@ class TestDirectives:
         else:
             assert "1 items passed all tests" in sphinx_output
             plugin_output.fnmatch_lines(["*=== 1 passed in *"])
+
+    @pytest.mark.parametrize(
+        "testcode", ["raise RuntimeError", "pass", "print(1234)"]
+    )
+    def test_skipif_true_in_testcode(self, testdir, sphinx_tester, testcode):
+        code = """
+            .. testcode::
+                :skipif: True
+
+                {}
+
+            .. testoutput::
+                :skipif: False
+
+                NOT EVALUATED
+            """.format(
+            testcode
+        )
+
+        sphinx_output = sphinx_tester(code, must_raise=False)
+        assert "0 tests" in sphinx_output
+
+        plugin_output = testdir.runpytest("--doctest-glob=index.rst").stdout
+        plugin_output.fnmatch_lines(["collected 0 items"])
