@@ -151,7 +151,7 @@ def _get_next_textoutputsections(sections, index):
     """Yield successive TESTOUTPUT sections."""
     for j in range(index, len(sections)):
         section = sections[j]
-        if section.name == SphinxDoctestDirectives.TESTOUTPUT:
+        if section.directive == SphinxDoctestDirectives.TESTOUTPUT:
             yield section
         else:
             break
@@ -182,9 +182,9 @@ def docstring2examples(docstring, globs=None):
     matches.append(len(lines))
 
     class Section(object):
-        def __init__(self, name, content, lineno, group="default"):
+        def __init__(self, directive, content, lineno, group="default"):
             super(Section, self).__init__()
-            self.name = name
+            self.directive = directive
             self.group = group
             self.lineno = lineno
             self.content = content
@@ -220,7 +220,7 @@ def docstring2examples(docstring, globs=None):
     examples = []
     for i, current_section in enumerate(sections):
         # TODO support SphinxDoctestDirectives.TESTSETUP, ...
-        if current_section.name == SphinxDoctestDirectives.TESTCODE:
+        if current_section.directive == SphinxDoctestDirectives.TESTCODE:
             next_testoutput_sections = _get_next_textoutputsections(
                 sections, i + 1
             )
