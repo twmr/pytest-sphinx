@@ -72,19 +72,19 @@ _OPTION_SKIPIF_RE = re.compile(r':skipif:\s*([^\n\'"]*)$')
 def _split_sections_into_content_and_options(section_content):
     """Parse the the full content of a directive and split it.
 
-    It is split into a string, where the options (:options: and :skipif:)
-    are removed, and into options.
+    It is split into a string, where the options (:options:, :hide: and
+    :skipif:) are removed, and into options.
 
     If there are options in `section_content`, they have to appear at the
-    very beginning. The first line that is not an option (:options: and
-    :skipif:) and not a newline is the first line of the string that is
+    very beginning. The first line that is not an option (:options:, :hide:
+    and :skipif:) and not a newline is the first line of the string that is
     returned (`remaining`).
 
     Parameters
     ----------
     section_content : str
-        String consisting of (optional) options like :skipif: and :options:,
-        and of a body.
+        String consisting of optional options (:skipif:, :hide:
+        or :options:), and of a body.
 
     Returns
     -------
@@ -127,6 +127,8 @@ def _split_sections_into_content_and_options(section_content):
                     )
                 flag = doctest.OPTIONFLAGS_BY_NAME[option[1:]]
                 flag_settings[flag] = option[0] == "+"
+            i += 1
+        elif stripped == ':hide:':
             i += 1
         else:
             break

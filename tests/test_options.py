@@ -49,6 +49,23 @@ def test_multiline_code():
     }
 
 
+def test_hide():
+    # test that the hide option is ignored
+    want = textwrap.dedent(
+        """
+        :options: +NORMALIZE_WHITESPACE
+        :hide:
+
+        code
+        """)
+    ret = _split_sections_into_content_and_options(want)
+    assert ret[0] == "code"
+    assert ret[1] is None
+    assert ret[2] == {
+        doctest.NORMALIZE_WHITESPACE: True,
+    }
+
+
 def test_options_and_text():
     want = textwrap.dedent(
         """
