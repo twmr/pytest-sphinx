@@ -3,27 +3,27 @@ import doctest
 
 import pytest
 
-from pytest_sphinx import _split_sections_into_content_and_options
+from pytest_sphinx import _split_into_body_and_options
 
 
 def test_only_options_empty_body():
     want = "\n:options: +NORMALIZE_WHITESPACE\n"
 
     with pytest.raises(ValueError, match="no code/output"):
-        _split_sections_into_content_and_options(want)
+        _split_into_body_and_options(want)
 
 
 def test_only_options_nonewline():
     want = "\n:options: +NORMALIZE_WHITESPACE\ncodeblock"
 
     with pytest.raises(ValueError, match="invalid option block"):
-        _split_sections_into_content_and_options(want)
+        _split_into_body_and_options(want)
 
 
 def test_mulitple_options():
     want = "\n:options: +NORMALIZE_WHITESPACE, -ELLIPSIS\n\ncodeblock"
 
-    ret = _split_sections_into_content_and_options(want)
+    ret = _split_into_body_and_options(want)
     assert ret[0] == "codeblock"
     assert ret[1] is None
     assert ret[2] == {
@@ -42,7 +42,7 @@ def test_multiline_code():
          'c':   20}
         """
     )
-    ret = _split_sections_into_content_and_options(want)
+    ret = _split_into_body_and_options(want)
     assert ret[0] == "{'a':    3,\n 'b':   44,\n 'c':   20}"
     assert ret[1] is None
     assert ret[2] == {
@@ -60,7 +60,7 @@ def test_hide():
         code
         """
     )
-    ret = _split_sections_into_content_and_options(want)
+    ret = _split_into_body_and_options(want)
     assert ret[0] == "code"
     assert ret[1] is None
     assert ret[2] == {
@@ -78,7 +78,7 @@ def test_options_and_text():
     """
     )
 
-    ret = _split_sections_into_content_and_options(want)
+    ret = _split_into_body_and_options(want)
     assert ret == ("abcedf\nabcedf", None, {4: True})
 
 
@@ -98,7 +98,7 @@ def test_skipif_and_text(expr, with_options):
     if with_options:
         want = "\n:options: +NORMALIZE_WHITESPACE" + want
 
-    ret = _split_sections_into_content_and_options(want)
+    ret = _split_into_body_and_options(want)
     assert ret[0] == "abcedf\nabcedf"
     assert ret[1] == expr
     if with_options:

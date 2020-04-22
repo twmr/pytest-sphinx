@@ -69,7 +69,7 @@ _OPTION_DIRECTIVE_RE = re.compile(r':options:\s*([^\n\'"]*)$')
 _OPTION_SKIPIF_RE = re.compile(r':skipif:\s*([^\n\'"]*)$')
 
 
-def _split_sections_into_content_and_options(section_content):
+def _split_into_body_and_options(section_content):
     """Parse the the full content of a directive and split it.
 
     It is split into a string, where the options (:options:, :hide: and
@@ -88,7 +88,7 @@ def _split_sections_into_content_and_options(section_content):
 
     Returns
     -------
-    remaining : str
+    body : str
     skipif_expr : str or None
     flag_settings : dict
 
@@ -136,15 +136,15 @@ def _split_sections_into_content_and_options(section_content):
     if i == len(lines):
         raise ValueError("no code/output")
 
-    remaining = "\n".join(lines[i:]).lstrip()
-    if not remaining:
+    body = "\n".join(lines[i:]).lstrip()
+    if not body:
         raise ValueError("no code/output")
 
     if i and lines[i].strip():
         # no newline between option block and body
         raise ValueError("invalid option block: {!r}".format(section_content))
 
-    return remaining, skipif_expr, flag_settings
+    return body, skipif_expr, flag_settings
 
 
 def _get_next_textoutputsections(sections, index):
@@ -203,7 +203,7 @@ def docstring2examples(docstring, globs=None):
         want = section.content
         exc_msg = None
 
-        want, skipif_expr, options = _split_sections_into_content_and_options(
+        want, skipif_expr, options = _split_into_body_and_options(
             want
         )
 
