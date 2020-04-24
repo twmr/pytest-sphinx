@@ -1,0 +1,17 @@
+.. testcode::
+
+    import pprint
+    pprint.pprint({'3': 4, '5': 6})
+
+text between doctest blocks
+
+more text
+
+.. testoutput::
+
+    {'3': 4,
+     '5': 6}
+
+text after testoutput block
+
+even more text
