@@ -9,24 +9,28 @@ https://github.com/sphinx-doc/sphinx/blob/master/sphinx/ext/doctest.py
 
 import doctest
 import enum
-import itertools
+import logging
 import re
 import sys
 import textwrap
 import traceback
+from os import path
 
 import _pytest.doctest
+import docutils.frontend
+import docutils.nodes
+import docutils.parsers.rst
+import docutils.utils
 import pytest
 from _pytest.doctest import DoctestItem
+from docutils import nodes
+from docutils.parsers.rst import directives
+
+logger = logging.getLogger(__name__)
 
 
-def pairwise(iterable):
-    """
-    s -> (s0,s1), (s1,s2), (s2, s3), ...
-    """
-    a, b = itertools.tee(iterable)
-    next(b, None)
-    return list(zip(a, b))
+blankline_re = re.compile(r"^\s*<BLANKLINE>", re.MULTILINE)
+doctestopt_re = re.compile(r"#\s*doctest:.+$", re.MULTILINE)
 
 
 class SphinxDoctestDirectives(enum.Enum):
@@ -35,19 +39,6 @@ class SphinxDoctestDirectives(enum.Enum):
     TESTSETUP = 3
     TESTCLEANUP = 4
     DOCTEST = 5
-
-
-_DIRECTIVES_W_OPTIONS = (
-    SphinxDoctestDirectives.TESTOUTPUT,
-    SphinxDoctestDirectives.DOCTEST,
-)
-_DIRECTIVES_W_SKIPIF = (
-    SphinxDoctestDirectives.TESTCODE,
-    SphinxDoctestDirectives.TESTOUTPUT,
-    SphinxDoctestDirectives.TESTSETUP,
-    SphinxDoctestDirectives.TESTCLEANUP,
-    SphinxDoctestDirectives.DOCTEST,
-)
 
 
 def pytest_collect_file(path, parent):
@@ -75,91 +66,6 @@ def _is_doctest(config, path, parent):
     return False
 
 
-# This regular expression looks for option directives in the expected output
-# (testoutput) code of an example.  Option directives are comments starting
-# with ":options:".
-_OPTION_DIRECTIVE_RE = re.compile(r':options:\s*([^\n\'"]*)$')
-_OPTION_SKIPIF_RE = re.compile(r':skipif:\s*([^\n\'"]*)$')
-
-
-def _split_into_body_and_options(section_content):
-    """Parse the the full content of a directive and split it.
-
-    It is split into a string, where the options (:options:, :hide: and
-    :skipif:) are removed, and into options.
-
-    If there are options in `section_content`, they have to appear at the
-    very beginning. The first line that is not an option (:options:, :hide:
-    and :skipif:) and not a newline is the first line of the string that is
-    returned (`remaining`).
-
-    Parameters
-    ----------
-    section_content : str
-        String consisting of optional options (:skipif:, :hide:
-        or :options:), and of a body.
-
-    Returns
-    -------
-    body : str
-    skipif_expr : str or None
-    flag_settings : dict
-
-    Raises
-    ------
-    ValueError
-        * If options and the body of the section are not
-        separated by a newline.
-        * If the body of the section is empty.
-
-    """
-    lines = section_content.strip().splitlines()
-
-    skipif_expr = None
-    flag_settings = {}
-    i = 0
-    for line in lines:
-        stripped = line.strip()
-        if _OPTION_SKIPIF_RE.match(stripped):
-            skipif_expr = _OPTION_SKIPIF_RE.match(stripped).group(1)
-            i += 1
-        elif _OPTION_DIRECTIVE_RE.match(stripped):
-            option_strings = (
-                _OPTION_DIRECTIVE_RE.match(stripped)
-                .group(1)
-                .replace(",", " ")
-                .split()
-            )
-            for option in option_strings:
-                if (
-                    option[0] not in "+-"
-                    or option[1:] not in doctest.OPTIONFLAGS_BY_NAME
-                ):
-                    raise ValueError(
-                        "doctest " "has an invalid option {}".format(option)
-                    )
-                flag = doctest.OPTIONFLAGS_BY_NAME[option[1:]]
-                flag_settings[flag] = option[0] == "+"
-            i += 1
-        elif stripped == ":hide:":
-            i += 1
-        else:
-            break
-
-    if i == len(lines):
-        raise ValueError("no code/output")
-
-    body = "\n".join(lines[i:]).lstrip()
-    if not body:
-        raise ValueError("no code/output")
-
-    if i and lines[i].strip():
-        # no newline between option block and body
-        raise ValueError("invalid option block: {!r}".format(section_content))
-
-    return body, skipif_expr, flag_settings
-
-
 def _get_next_textoutputsections(sections, index):
     """Yield successive TESTOUTPUT sections."""
     for j in range(index, len(sections)):
@@ -170,59 +76,204 @@ def _get_next_textoutputsections(sections, index):
             break
 
 
+class Section:
+    def __init__(self, directive, body, skipif_expr, options, lineno, groups):
+        self.directive = directive
+        self.body = body
+        self.skipif_expr = skipif_expr
+        self.options = options
+        self.lineno = lineno
+        self.groups = groups
+
+
+class TestDirective(docutils.parsers.rst.Directive):
+    has_content = True
+    required_arguments = 0
+    optional_arguments = 1
+    final_argument_whitespace = True
+
+    def run(self):
+        print(f"Run called {self.__class__.__name__}")
+        code = "\n".join(self.content)
+        test = None
+        if self.name == "doctest":
+            if "<BLANKLINE>" in code:
+                # convert <BLANKLINE>s to ordinary blank lines for presentation
+                test = code
+                code = blankline_re.sub("", code)
+            if doctestopt_re.search(code):
+                if not test:
+                    test = code
+                code = doctestopt_re.sub("", code)
+        nodetype = nodes.literal_block  # type: Type[TextElement]
+        if self.name in ("testsetup", "testcleanup") or "hide" in self.options:
+            nodetype = nodes.comment
+        if self.arguments:
+            groups = [x.strip() for x in self.arguments[0].split(",")]
+        else:
+            groups = ["default"]
+
+        node = nodetype(code, code, testnodetype=self.name, groups=groups)
+        node["options"] = {}
+        if (
+            self.name in ("doctest", "testoutput")
+            and "options" in self.options
+        ):
+            # parse doctest-like output comparison flags
+            option_strings = self.options["options"].replace(",", " ").split()
+            for option in option_strings:
+                prefix, option_name = option[0], option[1:]
+                if prefix not in "+-":
+                    self.state.document.reporter.warning(
+                        "missing '+' or '-' in '%s' option." % option,
+                        line=self.lineno,
+                    )
+                    continue
+                if option_name not in doctest.OPTIONFLAGS_BY_NAME:
+                    self.state.document.reporter.warning(
+                        "'%s' is not a valid option." % option_name,
+                        line=self.lineno,
+                    )
+                    continue
+                flag = doctest.OPTIONFLAGS_BY_NAME[option[1:]]
+                node["options"][flag] = option[0] == "+"
+        # if self.name == 'doctest' and 'pyversion' in self.options:
+        #     try:
+        #         spec = self.options['pyversion']
+        #         python_version = '.'.join([str(v) for v in sys.version_info[:3]])
+        #         if not is_allowed_version(spec, python_version):
+        #             flag = doctest.OPTIONFLAGS_BY_NAME['SKIP']
+        #             node['options'][flag] = True  # Skip the test
+        #     except InvalidSpecifier:
+        #         self.state.document.reporter.warning(
+        #             __("'%s' is not a valid pyversion option") % spec,
+        #             line=self.lineno)
+        if "skipif" in self.options:
+            node["skipif"] = self.options["skipif"]
+        return [node]
+
+
+class TestsetupDirective(TestDirective):
+    option_spec = {"skipif": directives.unchanged_required}
+
+
+class TestcleanupDirective(TestDirective):
+    option_spec = {"skipif": directives.unchanged_required}
+
+
+class DoctestDirective(TestDirective):
+    option_spec = {
+        "hide": directives.flag,
+        "options": directives.unchanged,
+        "pyversion": directives.unchanged_required,
+        "skipif": directives.unchanged_required,
+    }
+
+
+class TestcodeDirective(TestDirective):
+    option_spec = {
+        "hide": directives.flag,
+        "pyversion": directives.unchanged_required,
+        "skipif": directives.unchanged_required,
+    }
+
+
+class TestoutputDirective(TestDirective):
+    option_spec = {
+        "hide": directives.flag,
+        "options": directives.unchanged,
+        "pyversion": directives.unchanged_required,
+        "skipif": directives.unchanged_required,
+    }
+
+
+directives.register_directive("testcode", TestcodeDirective)
+directives.register_directive("testoutput", TestoutputDirective)
+directives.register_directive("testsetup", TestsetupDirective)
+directives.register_directive("testcleanup", TestcleanupDirective)
+directives.register_directive("doctest", DoctestDirective)
+
+
+def parse_rst(text: str) -> docutils.nodes.document:
+    parser = docutils.parsers.rst.Parser()
+    components = (docutils.parsers.rst.Parser,)
+    settings = docutils.frontend.OptionParser(
+        components=components
+    ).get_default_values()
+    document = docutils.utils.new_document("<rst-doc>", settings=settings)
+    parser.parse(text, document)
+    return document
+
+
+def condition(node):
+    return (
+        isinstance(node, (nodes.literal_block, nodes.comment))
+        and "testnodetype" in node
+    )
+
+
+def get_line_number(node):
+    """Get the real line number or admit we don't know."""
+    # FIXME since the directives in a docstring are indented (except in a
+    # module docstring), the line numbers are 0 (Can this be fixed somehow?)
+
+    if ":docstring of " in path.basename(node.source or ""):
+        return 0
+    if node.line is not None:
+        return node.line - 1
+    return 0
+
+
+def get_sections(docstring):
+    doctree = parse_rst(docstring)
+
+    sections = []
+    for node in doctree.traverse(condition):  # type: Element
+        # if self.skipped(node):
+        #     continue
+        print(node.__class__.__name__)
+        # pprint.pprint(node.__dict__)
+
+        source = node["test"] if "test" in node else node.astext()
+        # lines = source.splitlines()
+        # filename = self.get_filename_for_node(node, docname)
+        # line_number = self.get_line_number(node)
+        node_type = node.get("testnodetype", "doctest")
+        node_type = getattr(SphinxDoctestDirectives, node_type.upper())
+        node_options = node.get("options")
+        node_groups = node.get("groups", ["default"])
+        line_number = get_line_number(node)
+        node_skipif = node.get("skipif")
+        print(
+            f"Node: {node_type} {node_options} {node_groups} {line_number} "
+            f": {source}"
+        )
+        sections.append(
+            Section(
+                node_type,
+                source,
+                node_skipif,
+                node_options,
+                line_number,
+                node_groups,
+            )
+        )
+
+    return sections
+
+
 def docstring2examples(docstring, globs=None):
     """
     Parse all sphinx test directives in the docstring and create a
     list of examples.
     """
+    # TODO pass additional lineno to docstring2examples?
     # TODO subclass doctest.DocTestParser instead?
 
     if not globs:
         globs = {}
 
-    lines = textwrap.dedent(docstring).splitlines()
-    matches = [
-        i
-        for i, line in enumerate(lines)
-        if any(
-            line.lstrip().startswith(".. " + d.name.lower() + "::")
-            for d in SphinxDoctestDirectives
-        )
-    ]
-    if not matches:
-        return []
-
-    matches.append(len(lines))
-
-    class Section(object):
-        def __init__(self, directive, content, lineno, group="default"):
-            super(Section, self).__init__()
-            self.directive = directive
-            self.group = group
-            self.lineno = lineno
-            body, skipif_expr, options = _split_into_body_and_options(content)
-
-            if skipif_expr and self.directive not in _DIRECTIVES_W_SKIPIF:
-                raise ValueError(
-                    ":skipif: not allowed in {}".format(self.directive)
-                )
-            if options and self.directive not in _DIRECTIVES_W_OPTIONS:
-                raise ValueError(
-                    ":options: not allowed in {}".format(self.directive)
-                )
-            self.body = body
-            self.skipif_expr = skipif_expr
-            self.options = options
-
-    sections = []
-    for x, y in pairwise(matches):
-        section = lines[x:y]
-        header = section[0]
-        directive = next(
-            d for d in SphinxDoctestDirectives if d.name.lower() in header
-        )
-        out = "\n".join(section[1:])
-        sections.append(Section(directive, textwrap.dedent(out), lineno=x))
+    sections = get_sections(docstring)
 
     def get_testoutput_section_data(section):
         want = section.body
@@ -241,7 +292,6 @@ def docstring2examples(docstring, globs=None):
 
     examples = []
     for i, current_section in enumerate(sections):
-        # TODO support SphinxDoctestDirectives.TESTSETUP, ...
         if current_section.directive == SphinxDoctestDirectives.TESTCODE:
             next_testoutput_sections = _get_next_textoutputsections(
                 sections, i + 1
@@ -261,14 +311,15 @@ def docstring2examples(docstring, globs=None):
                 want, options, _, exc_msg = next(
                     d for d in section_data_seq if d[0]
                 )
-                # see comment below (where we use lineno -1)
-                lineno = section_data_seq[0][2]
             else:
                 # no unskipped testoutput section
                 # do we really need doctest.Example to test
                 # independent TESTCODE sections?
-                # TODO lineno may be wrong
-                want, options, lineno, exc_msg = "", {}, 1, None
+                want, options, exc_msg = (
+                    "",
+                    {},
+                    None,
+                )
 
             if current_section.skipif_expr and eval(
                 current_section.skipif_expr, globs
@@ -277,6 +328,10 @@ def docstring2examples(docstring, globs=None):
                 # skipped.
                 continue
 
+            # the lineno used here is used for exceptions:
+            # it is the number of lines starting one line
+            # before e.g. the testcode directive until the
+            # end of the body of that directive.
             examples.append(
                 doctest.Example(
                     source=current_section.body,
@@ -286,7 +341,7 @@ def docstring2examples(docstring, globs=None):
                     # console output but not the ..testoutput
                     # lines
                     # TODO why do we want to hide testoutput??
-                    lineno=lineno - 1,
+                    lineno=current_section.lineno - 1,
                     options=options,
                 )
             )
@@ -439,7 +494,7 @@ class SphinxDocTestParser(object):
     def get_doctest(self, docstring, globs, name, filename, lineno):
         # TODO document why we need to overwrite? get_doctest
         return doctest.DocTest(
-            examples=docstring2examples(docstring, globs=globs),
+            examples=docstring2examples(textwrap.dedent(docstring), globs=globs),
             globs=globs,
             name=name,
             filename=filename,

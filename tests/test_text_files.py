@@ -1,5 +1,6 @@
 import platform
 import sys
+import textwrap
 
 import _pytest.doctest
 import pytest_sphinx
@@ -90,6 +91,29 @@ def test_failing_doctest_in_text_file(testdir):
     result.stdout.fnmatch_lines(
         ["003*testcode::*", "005*print(2+3)*", "*=== 1 failed in *"]
     )
+
+
+def test_linenumbers_in_failing_doctest_in_text_file(testdir):
+    testdir.maketxtfile(
+        test_something=textwrap.dedent("""
+
+            There is a lot of text here
+            and here
+            and here.
+
+            .. testcode::
+
+                print(2+5)
+
+            .. testoutput::
+
+                3
+        """))
+    result = testdir.runpytest()
+    result.stdout.fnmatch_lines(
+        ["005*testcode::*", "007*print(2+5)*", "*=== 1 failed in *"]
+    )
+    assert "008" not in result.stdout.str()
 
 
 def test_expected_exception_doctest(testdir):

@@ -2,108 +2,6 @@ import doctest
 import textwrap
 
 import pytest
-from pytest_sphinx import _split_into_body_and_options
-
-
-def test_only_options_empty_body():
-    want = "\n:options: +NORMALIZE_WHITESPACE\n"
-
-    with pytest.raises(ValueError, match="no code/output"):
-        _split_into_body_and_options(want)
-
-
-def test_only_options_nonewline():
-    want = "\n:options: +NORMALIZE_WHITESPACE\ncodeblock"
-
-    with pytest.raises(ValueError, match="invalid option block"):
-        _split_into_body_and_options(want)
-
-
-def test_mulitple_options():
-    want = "\n:options: +NORMALIZE_WHITESPACE, -ELLIPSIS\n\ncodeblock"
-
-    ret = _split_into_body_and_options(want)
-    assert ret[0] == "codeblock"
-    assert ret[1] is None
-    assert ret[2] == {
-        doctest.NORMALIZE_WHITESPACE: True,
-        doctest.ELLIPSIS: False,
-    }
-
-
-def test_multiline_code():
-    want = textwrap.dedent(
-        """
-        :options: +NORMALIZE_WHITESPACE
-
-        {'a':    3,
-         'b':   44,
-         'c':   20}
-        """
-    )
-    ret = _split_into_body_and_options(want)
-    assert ret[0] == "{'a':    3,\n 'b':   44,\n 'c':   20}"
-    assert ret[1] is None
-    assert ret[2] == {
-        doctest.NORMALIZE_WHITESPACE: True,
-    }
-
-
-def test_hide():
-    # test that the hide option is ignored
-    want = textwrap.dedent(
-        """
-        :options: +NORMALIZE_WHITESPACE
-        :hide:
-
-        code
-        """
-    )
-    ret = _split_into_body_and_options(want)
-    assert ret[0] == "code"
-    assert ret[1] is None
-    assert ret[2] == {
-        doctest.NORMALIZE_WHITESPACE: True,
-    }
-
-
-def test_options_and_text():
-    want = textwrap.dedent(
-        """
-        :options: +NORMALIZE_WHITESPACE
-
-        abcedf
-        abcedf
-    """
-    )
-
-    ret = _split_into_body_and_options(want)
-    assert ret == ("abcedf\nabcedf", None, {4: True})
-
-
-@pytest.mark.parametrize("expr", ["True"])
-@pytest.mark.parametrize("with_options", [True, False])
-def test_skipif_and_text(expr, with_options):
-    want = textwrap.dedent(
-        """
-        :skipif: {}
-
-        abcedf
-        abcedf
-    """.format(
-            expr
-        )
-    )
-    if with_options:
-        want = "\n:options: +NORMALIZE_WHITESPACE" + want
-
-    ret = _split_into_body_and_options(want)
-    assert ret[0] == "abcedf\nabcedf"
-    assert ret[1] == expr
-    if with_options:
-        assert ret[2] == {doctest.NORMALIZE_WHITESPACE: True}
-    else:
-        assert ret[2] == {}
 
 
 def test_check_output_with_whitespace_normalization():
@@ -144,5 +42,5 @@ def test_doctest_with_whitespace_normalization(testdir):
     """
     )
 
-    result = testdir.runpytest("--doctest-modules")
+    result = testdir.runpytest()
     result.stdout.fnmatch_lines(["*=== 1 passed in *"])
