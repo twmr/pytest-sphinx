@@ -226,5 +226,6 @@ def get_sections(docstring):
     return sections
 
 
-sections = get_sections(open("doctest.txt").read())
+# sections = get_sections(open("doctest.txt").read())
+sections = get_sections(open("using_the_shapereader.rst").read())
 print([s.lineno for s in sections])
