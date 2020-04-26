@@ -121,3 +121,45 @@ def test_indented():
     assert example.exc_msg is None
     assert example.options == {}
     assert example.lineno == 8
+
+
+@pytest.mark.xfail(reason='fails due to unsupported '
+                   'versionchanged directive')
+def test_indented_in_dateutil():
+    doc = """
+    This is a tzinfo object that represents the UTC time zone.
+
+    **Examples:**
+
+    .. doctest::
+
+        >>> from datetime import *
+        >>> from dateutil.tz import *
+
+        >>> datetime.now()
+        datetime.datetime(2003, 9, 27, 9, 40, 1, 521290)
+
+        >>> datetime.now(tzutc())
+        datetime.datetime(2003, 9, 27, 12, 40, 12, 156379, tzinfo=tzutc())
+
+        >>> datetime.now(tzutc()).tzname()
+        'UTC'
+
+    .. versionchanged:: 2.7.0
+        ``tzutc()`` is now a singleton, so the result of ``tzutc()`` will
+        always return the same object.
+
+        .. doctest::
+
+            >>> from dateutil.tz import tzutc, UTC
+            >>> tzutc() is tzutc()
+            True
+            >>> tzutc() is UTC
+            True
+    """
+
+    # examples = docstring2examples(doc)
+    # assert len(examples) == 2
+    sections = get_sections(textwrap.dedent(doc))
+    # FIXME currently fails due to unsupported versionchanged directive
+    assert len(sections) == 2
