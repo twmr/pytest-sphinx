@@ -24,6 +24,7 @@ def test_simple():
     assert example.want == "{'3': 4,\n '5': 6}\n"
     assert example.exc_msg is None
     assert example.options == {}
+    assert example.lineno == 5
 
 
 def test_with_options():
@@ -50,6 +51,7 @@ def test_with_options():
         doctest.NORMALIZE_WHITESPACE: True,
         doctest.ELLIPSIS: True,
     }
+    assert example.lineno == 5
 
 
 def test_indented():
@@ -75,3 +77,4 @@ def test_indented():
     assert example.want == "Banana\n"
     assert example.exc_msg is None
     assert example.options == {}
+    assert example.lineno == 7
