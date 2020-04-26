@@ -1,9 +1,11 @@
 import doctest
+import os
 import textwrap
 
 import pytest
 
 from pytest_sphinx import docstring2examples
+from pytest_sphinx import get_sections
 
 
 @pytest.mark.parametrize("in_between_content", ["", "some text\nmore text"])
@@ -84,3 +86,13 @@ def test_indented():
     assert example.exc_msg is None
     assert example.options == {}
     assert example.lineno == 7
+
+
+def test_cartopy():
+    rstpath = os.path.join(
+        os.path.dirname(__file__), "testdata", "using_the_shapereader.rst"
+    )
+    with open(rstpath, "r") as fh:
+        sections = get_sections(fh.read())
+
+    assert len(sections) == 9
