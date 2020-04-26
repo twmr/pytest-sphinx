@@ -10,6 +10,7 @@ def test_collect_testtextfile(testdir):
     checkfile = testdir.maketxtfile(
         test_something="""
         alskdjalsdk
+
         .. testcode::
 
             print(2+3)
@@ -53,6 +54,7 @@ def test_successful_doctest_in_text_file(testdir):
     testdir.maketxtfile(
         test_something="""
         alskdjalsdk
+
         .. testcode::
 
             print(2+3)
@@ -72,6 +74,7 @@ def test_failing_doctest_in_text_file(testdir):
     testdir.maketxtfile(
         test_something="""
         alskdjalsdk
+
         .. testcode::
 
             print(2+3)
@@ -85,7 +88,7 @@ def test_failing_doctest_in_text_file(testdir):
     result = testdir.runpytest("--doctest-modules")
     assert "FAILURES" in result.stdout.str()
     result.stdout.fnmatch_lines(
-        ["002*testcode::*", "004*print(2+3)*", "*=== 1 failed in *"]
+        ["003*testcode::*", "005*print(2+3)*", "*=== 1 failed in *"]
     )
 
 
