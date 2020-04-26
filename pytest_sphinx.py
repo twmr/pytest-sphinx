@@ -170,6 +170,27 @@ def _get_next_textoutputsections(sections, index):
             break
 
 
+class Section(object):
+    def __init__(self, directive, content, lineno, group="default"):
+        super(Section, self).__init__()
+        self.directive = directive
+        self.group = group
+        self.lineno = lineno
+        body, skipif_expr, options = _split_into_body_and_options(content)
+
+        if skipif_expr and self.directive not in _DIRECTIVES_W_SKIPIF:
+            raise ValueError(
+                ":skipif: not allowed in {}".format(self.directive)
+            )
+        if options and self.directive not in _DIRECTIVES_W_OPTIONS:
+            raise ValueError(
+                ":options: not allowed in {}".format(self.directive)
+            )
+        self.body = body
+        self.skipif_expr = skipif_expr
+        self.options = options
+
+
 def docstring2examples(docstring, globs=None):
     """
     Parse all sphinx test directives in the docstring and create a
@@ -193,26 +214,6 @@ def docstring2examples(docstring, globs=None):
         return []
 
     matches.append(len(lines))
-
-    class Section(object):
-        def __init__(self, directive, content, lineno, group="default"):
-            super(Section, self).__init__()
-            self.directive = directive
-            self.group = group
-            self.lineno = lineno
-            body, skipif_expr, options = _split_into_body_and_options(content)
-
-            if skipif_expr and self.directive not in _DIRECTIVES_W_SKIPIF:
-                raise ValueError(
-                    ":skipif: not allowed in {}".format(self.directive)
-                )
-            if options and self.directive not in _DIRECTIVES_W_OPTIONS:
-                raise ValueError(
-                    ":options: not allowed in {}".format(self.directive)
-                )
-            self.body = body
-            self.skipif_expr = skipif_expr
-            self.options = options
 
     sections = []
     for x, y in pairwise(matches):
