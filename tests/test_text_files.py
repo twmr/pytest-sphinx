@@ -1,5 +1,5 @@
-import sys
 import platform
+import sys
 
 import _pytest.doctest
 import pytest_sphinx

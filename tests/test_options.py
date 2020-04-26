@@ -1,8 +1,7 @@
-import textwrap
 import doctest
+import textwrap
 
 import pytest
-
 from pytest_sphinx import _split_into_body_and_options
 
 

@@ -11,13 +11,13 @@ import doctest
 import enum
 import itertools
 import re
-import textwrap
 import sys
+import textwrap
 import traceback
 
 import _pytest.doctest
-from _pytest.doctest import DoctestItem
 import pytest
+from _pytest.doctest import DoctestItem
 
 
 def pairwise(iterable):

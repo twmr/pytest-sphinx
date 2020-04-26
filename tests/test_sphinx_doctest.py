@@ -7,7 +7,6 @@ import textwrap
 
 import pytest
 
-
 logger = logging.getLogger(__name__)
 
 pytestmark = pytest.mark.skipif(
