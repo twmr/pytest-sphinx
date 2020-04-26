@@ -46,7 +46,7 @@ def test_successful_multiline_doctest_in_text_file(testdir):
     """
     )
 
-    result = testdir.runpytest("--doctest-modules")
+    result = testdir.runpytest()
     result.stdout.fnmatch_lines(["*=== 1 passed in *"])
 
 
@@ -65,7 +65,7 @@ def test_successful_doctest_in_text_file(testdir):
     """
     )
 
-    result = testdir.runpytest("--doctest-modules")
+    result = testdir.runpytest()
     assert "testcode" not in result.stdout.str()
     result.stdout.fnmatch_lines(["*=== 1 passed in *"])
 
@@ -85,7 +85,7 @@ def test_failing_doctest_in_text_file(testdir):
     """
     )
 
-    result = testdir.runpytest("--doctest-modules")
+    result = testdir.runpytest()
     assert "FAILURES" in result.stdout.str()
     result.stdout.fnmatch_lines(
         ["003*testcode::*", "005*print(2+3)*", "*=== 1 failed in *"]
@@ -116,7 +116,7 @@ def test_expected_exception_doctest(testdir):
         )
     )
 
-    result = testdir.runpytest("--doctest-modules")
+    result = testdir.runpytest()
     result.stdout.fnmatch_lines(["*=== 1 passed in *"])
 
 
@@ -140,7 +140,7 @@ def test_global_optionflags(testdir):
     """
     )
 
-    result = testdir.inline_run("--doctest-modules")
+    result = testdir.inline_run()
     result.assertoutcome(passed=1, failed=0)
 
 
@@ -164,7 +164,7 @@ def test_no_ellipsis_in_global_optionflags(testdir):
     """
     )
 
-    result = testdir.runpytest("--doctest-modules")
+    result = testdir.runpytest()
     result.stdout.fnmatch_lines(
         ["Expected:", "*ab...gh", "Got:", "*abcdefgh", "*=== 1 failed in *"]
     )
@@ -184,5 +184,5 @@ def test_skipif_non_builtin(testdir):
     """
     )
 
-    result = testdir.runpytest("--doctest-modules")
+    result = testdir.runpytest()
     result.stdout.fnmatch_lines(["*NameError:*name 'pd' is not defined"])
