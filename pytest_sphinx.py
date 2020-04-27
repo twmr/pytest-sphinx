@@ -71,6 +71,10 @@ def _is_doctest(config, path, parent):
 _OPTION_DIRECTIVE_RE = re.compile(r':options:\s*([^\n\'"]*)$')
 _OPTION_SKIPIF_RE = re.compile(r':skipif:\s*([^\n\'"]*)$')
 
+_DIRECTIVE_RE = re.compile(r'\s*\.\. ('
+                           r'testcode|testoutput|testsetup|testcleanup|doctest'
+                           r')::\s*([^\n\'"]*)$')
+
 
 def _split_into_body_and_options(section_content):
     """Parse the the full content of a directive and split it.
@@ -204,15 +208,9 @@ def get_sections(docstring):
         except IndexError:
             break
 
-        # TODO use regex
-        if any(
-            line.lstrip().startswith(".. " + d.name.lower() + "::")
-            for d in SphinxDoctestDirectives
-        ):
-            # TODO use regex
-            directive = next(
-                d for d in SphinxDoctestDirectives if d.name.lower() in line
-            )
+        match = _DIRECTIVE_RE.match(line)
+        if match:
+            directive = getattr(SphinxDoctestDirectives, match.group(1).upper())
             indentation = _get_indentation(line)
             # find the end of the block
             j = i
