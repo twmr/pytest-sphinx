@@ -8,19 +8,18 @@ from pytest_sphinx import docstring2examples
 from pytest_sphinx import get_sections
 
 
-@pytest.mark.parametrize("in_between_content", ["", "some text\nmore text"])
+@pytest.mark.parametrize("in_between_content", ["", "\nsome text\nmore text"])
 def test_simple(in_between_content):
     doc = """
 .. testcode::
 
     import pprint
-    pprint.pprint({'3': 4, '5': 6})
-
+    pprint.pprint({{'3': 4, '5': 6}})
 {}
 .. testoutput::
 
-    {'3': 4,
-     '5': 6}
+    {{'3': 4,
+     '5': 6}}
 """.format(
         in_between_content
     )
