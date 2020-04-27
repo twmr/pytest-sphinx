@@ -9,7 +9,6 @@ https://github.com/sphinx-doc/sphinx/blob/master/sphinx/ext/doctest.py
 
 import doctest
 import enum
-import itertools
 import re
 import sys
 import textwrap
@@ -18,15 +17,6 @@ import traceback
 import _pytest.doctest
 import pytest
 from _pytest.doctest import DoctestItem
-
-
-def pairwise(iterable):
-    """
-    s -> (s0,s1), (s1,s2), (s2, s3), ...
-    """
-    a, b = itertools.tee(iterable)
-    next(b, None)
-    return list(zip(a, b))
 
 
 class SphinxDoctestDirectives(enum.Enum):
