@@ -95,3 +95,4 @@ def test_cartopy():
         sections = get_sections(fh.read())
 
     assert len(sections) == 9
+    assert sections[0].groups == ['countries']

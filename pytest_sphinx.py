@@ -165,10 +165,10 @@ def _get_next_textoutputsections(sections, index):
 
 
 class Section(object):
-    def __init__(self, directive, content, lineno, group="default"):
+    def __init__(self, directive, content, lineno, groups=None):
         super(Section, self).__init__()
         self.directive = directive
-        self.group = group
+        self.groups = groups
         self.lineno = lineno
         body, skipif_expr, options = _split_into_body_and_options(content)
 
@@ -192,12 +192,13 @@ def get_sections(docstring):
     def _get_indentation(line):
         return len(line) - len(line.lstrip())
 
-    def add_match(directive, i, j):
+    def add_match(directive, i, j, groups):
         sections.append(
             Section(
                 directive,
                 textwrap.dedent("\n".join(lines[i + 1 : j])),
                 lineno=j - 1,
+                groups=groups,
             )
         )
 
@@ -211,6 +212,7 @@ def get_sections(docstring):
         match = _DIRECTIVE_RE.match(line)
         if match:
             directive = getattr(SphinxDoctestDirectives, match.group(1).upper())
+            groups = [x.strip() for x in (match.group(2) or 'default').split(',')]
             indentation = _get_indentation(line)
             # find the end of the block
             j = i
@@ -219,13 +221,13 @@ def get_sections(docstring):
                 try:
                     block_line = lines[j]
                 except IndexError:
-                    add_match(directive, i, j)
+                    add_match(directive, i, j, groups)
                     break
                 if (
                     block_line.lstrip()
                     and _get_indentation(block_line) <= indentation
                 ):
-                    add_match(directive, i, j)
+                    add_match(directive, i, j, groups)
                     i = j - 1
                     break
         i += 1
