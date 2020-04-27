@@ -186,3 +186,28 @@ def test_skipif_non_builtin(testdir):
 
     result = testdir.runpytest()
     result.stdout.fnmatch_lines(["*NameError:*name 'pd' is not defined"])
+
+
+def test_doctest_namespace(testdir):
+    testdir.maketxtfile(
+        test_something="""
+        .. testcode::
+
+           sys.version_info is not None
+    """
+    )
+
+    testdir.makeconftest(
+        """
+        import sys
+
+        import pytest
+
+        @pytest.fixture(autouse=True)
+        def add_sys(doctest_namespace):
+            doctest_namespace["sys"] = sys
+        """
+    )
+
+    result = testdir.runpytest()
+    result.stdout.fnmatch_lines(["*=== 1 passed in *"])
