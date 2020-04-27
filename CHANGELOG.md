@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - A ValueError is raised if the text inside the directives is not properly
   formatted.
 - Ignore the option :hide: in directives (Fixes #19)
+- Fix detection of block boundaries in parser.
 
 ## [0.2.2] - 2019-05-24
 ###

@@ -191,6 +191,59 @@ class Section(object):
         self.options = options
 
 
+def get_sections(docstring):
+    lines = textwrap.dedent(docstring).splitlines()
+    sections = []
+
+    def _get_indentation(line):
+        return len(line) - len(line.lstrip())
+
+    def add_match(directive, i, j):
+        sections.append(
+            Section(
+                directive,
+                textwrap.dedent("\n".join(lines[i + 1 : j])),
+                lineno=j - 1,
+            )
+        )
+
+    i = 0
+    while True:
+        try:
+            line = lines[i]
+        except IndexError:
+            break
+
+        # TODO use regex
+        if any(
+            line.lstrip().startswith(".. " + d.name.lower() + "::")
+            for d in SphinxDoctestDirectives
+        ):
+            # TODO use regex
+            directive = next(
+                d for d in SphinxDoctestDirectives if d.name.lower() in line
+            )
+            indentation = _get_indentation(line)
+            # find the end of the block
+            j = i
+            while True:
+                j += 1
+                try:
+                    block_line = lines[j]
+                except IndexError:
+                    add_match(directive, i, j)
+                    break
+                if (
+                    block_line.lstrip()
+                    and _get_indentation(block_line) <= indentation
+                ):
+                    add_match(directive, i, j)
+                    i = j - 1
+                    break
+        i += 1
+    return sections
+
+
 def docstring2examples(docstring, globs=None):
     """
     Parse all sphinx test directives in the docstring and create a
@@ -201,29 +254,7 @@ def docstring2examples(docstring, globs=None):
     if not globs:
         globs = {}
 
-    lines = textwrap.dedent(docstring).splitlines()
-    matches = [
-        i
-        for i, line in enumerate(lines)
-        if any(
-            line.lstrip().startswith(".. " + d.name.lower() + "::")
-            for d in SphinxDoctestDirectives
-        )
-    ]
-    if not matches:
-        return []
-
-    matches.append(len(lines))
-
-    sections = []
-    for x, y in pairwise(matches):
-        section = lines[x:y]
-        header = section[0]
-        directive = next(
-            d for d in SphinxDoctestDirectives if d.name.lower() in header
-        )
-        out = "\n".join(section[1:])
-        sections.append(Section(directive, textwrap.dedent(out), lineno=x))
+    sections = get_sections(docstring)
 
     def get_testoutput_section_data(section):
         want = section.body
@@ -262,14 +293,11 @@ def docstring2examples(docstring, globs=None):
                 want, options, _, exc_msg = next(
                     d for d in section_data_seq if d[0]
                 )
-                # see comment below (where we use lineno -1)
-                lineno = section_data_seq[0][2]
             else:
                 # no unskipped testoutput section
                 # do we really need doctest.Example to test
                 # independent TESTCODE sections?
-                # TODO lineno may be wrong
-                want, options, lineno, exc_msg = "", {}, 1, None
+                want, options, exc_msg = "", {}, None
 
             if current_section.skipif_expr and eval(
                 current_section.skipif_expr, globs
@@ -287,7 +315,7 @@ def docstring2examples(docstring, globs=None):
                     # console output but not the ..testoutput
                     # lines
                     # TODO why do we want to hide testoutput??
-                    lineno=lineno - 1,
+                    lineno=current_section.lineno,
                     options=options,
                 )
             )

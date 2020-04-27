@@ -1,21 +1,27 @@
 import doctest
 import textwrap
 
+import pytest
+
 from pytest_sphinx import docstring2examples
 
 
-def test_simple():
+@pytest.mark.parametrize("in_between_content", ["", "some text\nmore text"])
+def test_simple(in_between_content):
     doc = """
 .. testcode::
 
     import pprint
     pprint.pprint({'3': 4, '5': 6})
 
+{}
 .. testoutput::
 
     {'3': 4,
      '5': 6}
-"""
+""".format(
+        in_between_content
+    )
 
     examples = docstring2examples(doc)
     assert len(examples) == 1
