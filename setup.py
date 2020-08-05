@@ -14,7 +14,7 @@ def read(fname):
 
 setup(
     name="pytest-sphinx",
-    version="0.3",
+    version="0.3.1",
     author="Thomas Hisch",
     author_email="t.hisch@gmail.com",
     maintainer="Thomas Hisch",

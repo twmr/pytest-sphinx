@@ -237,3 +237,26 @@ def test_workaround_for_doctest_mockobj_bug(testdir):
 
     result = testdir.runpytest("--doctest-modules")
     result.stdout.fnmatch_lines(["*=== 1 passed in *"])
+
+
+def test_with_conftest(testdir):
+    content = """
+        \"\"\"
+        .. testcode::
+
+            print('abc')
+
+        .. testoutput::
+
+            abc
+        \"\"\"
+    """
+
+    testdir.maketxtfile(test_something=content)
+
+    testdir.makeconftest(content)
+
+    # what do we expect?
+    result = testdir.runpytest("--doctest-modules")
+    # 2 test passed one test in conftest.py and one in something.py
+    result.stdout.fnmatch_lines(["*=== 2 passed in *"])

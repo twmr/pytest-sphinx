@@ -511,7 +511,13 @@ class SphinxDoctestTextfile(pytest.Module):
 class SphinxDoctestModule(pytest.Module):
     def collect(self):
         if self.fspath.basename == "conftest.py":
-            module = self.config.pluginmanager._importconftest(self.fspath)
+            try:
+                module = self.config.pluginmanager._importconftest(
+                    self.fspath, importmode="prepend"
+                )
+            except TypeError:
+                # pytest < 6.0
+                module = self.config.pluginmanager._importconftest(self.fspath)
         else:
             try:
                 module = self.fspath.pyimport()
