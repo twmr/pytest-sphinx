@@ -455,7 +455,9 @@ class SphinxDoctestTextfile(pytest.Module):
 
         optionflags = _pytest.doctest.get_optionflags(self)
         runner = SphinxDocTestRunner(
-            verbose=0, optionflags=optionflags, checker=_pytest.doctest._get_checker(),
+            verbose=0,
+            optionflags=optionflags,
+            checker=_pytest.doctest._get_checker(),
         )
 
         test = doctest.DocTest(
@@ -504,13 +506,22 @@ class SphinxDoctestModule(pytest.Module):
                     return
                 with _patch_unwrap_mock_aware():
                     doctest.DocTestFinder._find(
-                        self, tests, obj, name, module, source_lines, globs, seen,
+                        self,
+                        tests,
+                        obj,
+                        name,
+                        module,
+                        source_lines,
+                        globs,
+                        seen,
                     )
 
         finder = MockAwareDocTestFinder(parser=SphinxDocTestParser())
 
         runner = SphinxDocTestRunner(
-            verbose=0, optionflags=optionflags, checker=_pytest.doctest._get_checker(),
+            verbose=0,
+            optionflags=optionflags,
+            checker=_pytest.doctest._get_checker(),
         )
 
         for test in finder.find(module, module.__name__):
