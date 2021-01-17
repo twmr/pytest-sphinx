@@ -16,6 +16,8 @@ import traceback
 
 import _pytest.doctest
 import pytest
+from _pytest.doctest import _is_mocked
+from _pytest.doctest import _patch_unwrap_mock_aware
 from _pytest.doctest import DoctestItem
 
 
@@ -44,15 +46,9 @@ def pytest_collect_file(path, parent):
     config = parent.config
     if path.ext == ".py":
         if config.option.doctestmodules:
-            if hasattr(SphinxDoctestModule, "from_parent"):
-                return SphinxDoctestModule.from_parent(parent, fspath=path)
-            else:
-                return SphinxDoctestModule(path, parent)
+            return SphinxDoctestModule.from_parent(parent, fspath=path)
     elif _is_doctest(config, path, parent):
-        if hasattr(SphinxDoctestTextfile, "from_parent"):
-            return SphinxDoctestTextfile.from_parent(parent, fspath=path)
-        else:
-            return SphinxDoctestTextfile(path, parent)
+        return SphinxDoctestTextfile.from_parent(parent, fspath=path)
 
 
 def _is_doctest(config, path, parent):
@@ -121,10 +117,7 @@ def _split_into_body_and_options(section_content):
             i += 1
         elif _OPTION_DIRECTIVE_RE.match(stripped):
             option_strings = (
-                _OPTION_DIRECTIVE_RE.match(stripped)
-                .group(1)
-                .replace(",", " ")
-                .split()
+                _OPTION_DIRECTIVE_RE.match(stripped).group(1).replace(",", " ").split()
             )
             for option in option_strings:
                 if (
@@ -175,13 +168,9 @@ class Section(object):
         body, skipif_expr, options = _split_into_body_and_options(content)
 
         if skipif_expr and self.directive not in _DIRECTIVES_W_SKIPIF:
-            raise ValueError(
-                ":skipif: not allowed in {}".format(self.directive)
-            )
+            raise ValueError(":skipif: not allowed in {}".format(self.directive))
         if options and self.directive not in _DIRECTIVES_W_OPTIONS:
-            raise ValueError(
-                ":options: not allowed in {}".format(self.directive)
-            )
+            raise ValueError(":options: not allowed in {}".format(self.directive))
         self.body = body
         self.skipif_expr = skipif_expr
         self.options = options
@@ -213,12 +202,8 @@ def get_sections(docstring):
 
         match = _DIRECTIVE_RE.match(line)
         if match:
-            directive = getattr(
-                SphinxDoctestDirectives, match.group(1).upper()
-            )
-            groups = [
-                x.strip() for x in (match.group(2) or "default").split(",")
-            ]
+            directive = getattr(SphinxDoctestDirectives, match.group(1).upper())
+            groups = [x.strip() for x in (match.group(2) or "default").split(",")]
             indentation = _get_indentation(line)
             # find the end of the block
             j = i
@@ -229,10 +214,7 @@ def get_sections(docstring):
                 except IndexError:
                     add_match(directive, i, j, groups)
                     break
-                if (
-                    block_line.lstrip()
-                    and _get_indentation(block_line) <= indentation
-                ):
+                if block_line.lstrip() and _get_indentation(block_line) <= indentation:
                     add_match(directive, i, j, groups)
                     i = j - 1
                     break
@@ -271,33 +253,24 @@ def docstring2examples(docstring, globs=None):
     for i, current_section in enumerate(sections):
         # TODO support SphinxDoctestDirectives.TESTSETUP, ...
         if current_section.directive == SphinxDoctestDirectives.TESTCODE:
-            next_testoutput_sections = _get_next_textoutputsections(
-                sections, i + 1
-            )
+            next_testoutput_sections = _get_next_textoutputsections(sections, i + 1)
             section_data_seq = [
-                get_testoutput_section_data(s)
-                for s in next_testoutput_sections
+                get_testoutput_section_data(s) for s in next_testoutput_sections
             ]
 
             num_unskipped_sections = len([d for d in section_data_seq if d[0]])
             if num_unskipped_sections > 1:
-                raise ValueError(
-                    "There are multiple unskipped TESTOUTPUT sections"
-                )
+                raise ValueError("There are multiple unskipped TESTOUTPUT sections")
 
             if num_unskipped_sections:
-                want, options, _, exc_msg = next(
-                    d for d in section_data_seq if d[0]
-                )
+                want, options, _, exc_msg = next(d for d in section_data_seq if d[0])
             else:
                 # no unskipped testoutput section
                 # do we really need doctest.Example to test
                 # independent TESTCODE sections?
                 want, options, exc_msg = "", {}, None
 
-            if current_section.skipif_expr and eval(
-                current_section.skipif_expr, globs
-            ):
+            if current_section.skipif_expr and eval(current_section.skipif_expr, globs):
                 # TODO add the doctest.Example to `examples` but mark it as
                 # skipped.
                 continue
@@ -354,8 +327,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
             # If REPORT_ONLY_FIRST_FAILURE is set, then suppress
             # reporting after the first failure.
             quiet = (
-                self.optionflags & doctest.REPORT_ONLY_FIRST_FAILURE
-                and failures > 0
+                self.optionflags & doctest.REPORT_ONLY_FIRST_FAILURE and failures > 0
             )
 
             # Merge in the example's options.
@@ -442,9 +414,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
                 failures += 1
             elif outcome is BOOM:
                 if not quiet:
-                    self.report_unexpected_exception(
-                        out, test, example, exception
-                    )
+                    self.report_unexpected_exception(out, test, example, exception)
                 failures += 1
             else:
                 assert False, ("unknown outcome", outcome)
@@ -485,9 +455,7 @@ class SphinxDoctestTextfile(pytest.Module):
 
         optionflags = _pytest.doctest.get_optionflags(self)
         runner = SphinxDocTestRunner(
-            verbose=0,
-            optionflags=optionflags,
-            checker=_pytest.doctest._get_checker(),
+            verbose=0, optionflags=optionflags, checker=_pytest.doctest._get_checker(),
         )
 
         test = doctest.DocTest(
@@ -500,24 +468,17 @@ class SphinxDoctestTextfile(pytest.Module):
         )
 
         if test.examples:
-            if hasattr(DoctestItem, "from_parent"):
-                yield DoctestItem.from_parent(
-                    parent=self, name=test.name, runner=runner, dtest=test
-                )
-            else:
-                yield DoctestItem(test.name, self, runner, test)
+            yield DoctestItem.from_parent(
+                parent=self, name=test.name, runner=runner, dtest=test
+            )
 
 
 class SphinxDoctestModule(pytest.Module):
     def collect(self):
         if self.fspath.basename == "conftest.py":
-            try:
-                module = self.config.pluginmanager._importconftest(
-                    self.fspath, importmode="prepend"
-                )
-            except TypeError:
-                # pytest < 6.0
-                module = self.config.pluginmanager._importconftest(self.fspath)
+            module = self.config.pluginmanager._importconftest(
+                self.fspath, self.config.getoption("importmode")
+            )
         else:
             try:
                 module = self.fspath.pyimport()
@@ -538,42 +499,22 @@ class SphinxDoctestModule(pytest.Module):
             fix taken from https://github.com/pytest-dev/pytest/pull/4212/
             """
 
-            def _find(
-                self, tests, obj, name, module, source_lines, globs, seen
-            ):
+            def _find(self, tests, obj, name, module, source_lines, globs, seen):
                 if _is_mocked(obj):
                     return
                 with _patch_unwrap_mock_aware():
                     doctest.DocTestFinder._find(
-                        self,
-                        tests,
-                        obj,
-                        name,
-                        module,
-                        source_lines,
-                        globs,
-                        seen,
+                        self, tests, obj, name, module, source_lines, globs, seen,
                     )
 
-        try:
-            from _pytest.doctest import _is_mocked
-            from _pytest.doctest import _patch_unwrap_mock_aware
-        except ImportError:
-            finder = doctest.DocTestFinder(parser=SphinxDocTestParser())
-        else:
-            finder = MockAwareDocTestFinder(parser=SphinxDocTestParser())
+        finder = MockAwareDocTestFinder(parser=SphinxDocTestParser())
 
         runner = SphinxDocTestRunner(
-            verbose=0,
-            optionflags=optionflags,
-            checker=_pytest.doctest._get_checker(),
+            verbose=0, optionflags=optionflags, checker=_pytest.doctest._get_checker(),
         )
 
         for test in finder.find(module, module.__name__):
             if test.examples:
-                if hasattr(DoctestItem, "from_parent"):
-                    yield DoctestItem.from_parent(
-                        parent=self, name=test.name, runner=runner, dtest=test
-                    )
-                else:
-                    yield DoctestItem(test.name, self, runner, test)
+                yield DoctestItem.from_parent(
+                    parent=self, name=test.name, runner=runner, dtest=test
+                )
