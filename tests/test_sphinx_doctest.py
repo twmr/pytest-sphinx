@@ -2,16 +2,11 @@
 import logging
 import os
 import subprocess
-import sys
 import textwrap
 
 import pytest
 
 logger = logging.getLogger(__name__)
-
-pytestmark = pytest.mark.skipif(
-    sys.version_info.major == 2, reason="problems with shinx in py2"
-)
 
 
 class SphinxDoctestRunner:
@@ -121,9 +116,7 @@ class TestDirectives:
         plugin_result = testdir.runpytest("--doctest-glob=index.rst").stdout
         plugin_result.fnmatch_lines(["*=== 1 passed in *"])
 
-    @pytest.mark.parametrize(
-        "testcode", ["raise RuntimeError", "pass", "print(1234)"]
-    )
+    @pytest.mark.parametrize("testcode", ["raise RuntimeError", "pass", "print(1234)"])
     def test_skipif_true(self, testdir, sphinx_tester, testcode):
         code = """
             .. testcode::
@@ -222,9 +215,7 @@ class TestDirectives:
             assert "1 items passed all tests" in sphinx_output
             plugin_output.fnmatch_lines(["*=== 1 passed in *"])
 
-    @pytest.mark.parametrize(
-        "testcode", ["raise RuntimeError", "pass", "print(1234)"]
-    )
+    @pytest.mark.parametrize("testcode", ["raise RuntimeError", "pass", "print(1234)"])
     def test_skipif_true_in_testcode(self, testdir, sphinx_tester, testcode):
         code = """
             .. testcode::

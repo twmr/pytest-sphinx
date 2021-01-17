@@ -35,7 +35,6 @@ Requirements
 ------------
 
 * pytest
-* enum34 (for python2.7)
 
 
 Installation

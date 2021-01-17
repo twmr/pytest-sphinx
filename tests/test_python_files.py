@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 import textwrap
 
-import six
-
 
 def test_syntax_error_in_module_doctest(testdir):
 
@@ -226,12 +224,8 @@ def test_workaround_for_doctest_mockobj_bug(testdir):
 
         \"\"\"
 
-        {}
+        from unittest.mock import call
     """
-        ).format(
-            "from mock import call"
-            if six.PY2
-            else "from unittest.mock import call"
         )
     )
 
