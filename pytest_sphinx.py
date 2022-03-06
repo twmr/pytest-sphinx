@@ -9,6 +9,7 @@ https://github.com/sphinx-doc/sphinx/blob/master/sphinx/ext/doctest.py
 
 import doctest
 import enum
+from pathlib import Path
 import re
 import sys
 import textwrap
@@ -19,6 +20,7 @@ import pytest
 from _pytest.doctest import _is_mocked
 from _pytest.doctest import _patch_unwrap_mock_aware
 from _pytest.doctest import DoctestItem
+from _pytest.pathlib import import_path
 
 
 class SphinxDoctestDirectives(enum.Enum):
@@ -46,9 +48,9 @@ def pytest_collect_file(path, parent):
     config = parent.config
     if path.ext == ".py":
         if config.option.doctestmodules:
-            return SphinxDoctestModule.from_parent(parent, fspath=path)
+            return SphinxDoctestModule.from_parent(parent, path=Path(path.strpath))
     elif _is_doctest(config, path, parent):
-        return SphinxDoctestTextfile.from_parent(parent, fspath=path)
+        return SphinxDoctestTextfile.from_parent(parent, path=Path(path.strpath))
 
 
 def _is_doctest(config, path, parent):
@@ -479,14 +481,16 @@ class SphinxDoctestModule(pytest.Module):
     def collect(self):
         if self.fspath.basename == "conftest.py":
             module = self.config.pluginmanager._importconftest(
-                self.fspath, self.config.getoption("importmode")
+                self.path,
+                self.config.getoption("importmode"),
+                rootpath=self.config.rootpath,
             )
         else:
             try:
-                module = self.fspath.pyimport()
+                module = import_path(self.path, root=self.config.rootpath)
             except ImportError:
                 if self.config.getvalue("doctest_ignore_import_errors"):
-                    pytest.skip("unable to import module %r" % self.fspath)
+                    pytest.skip("unable to import module %r" % self.path)
                 else:
                     raise
         optionflags = _pytest.doctest.get_optionflags(self)
