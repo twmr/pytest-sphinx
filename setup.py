@@ -14,7 +14,7 @@ def read(fname):
 
 setup(
     name="pytest-sphinx",
-    version="0.3.1",
+    version="0.4.0",
     author="Thomas Hisch",
     author_email="t.hisch@gmail.com",
     maintainer="Thomas Hisch",
@@ -27,7 +27,7 @@ setup(
     ),
     long_description=read("README.rst"),
     py_modules=["pytest_sphinx"],
-    install_requires=["pytest>=6.0.0"],
+    install_requires=["pytest>=7.0.0"],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Framework :: Pytest",
@@ -35,13 +35,11 @@ setup(
         "Topic :: Software Development :: Testing",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: Implementation :: CPython",
-        "Programming Language :: Python :: Implementation :: PyPy",
         "Operating System :: OS Independent",
         "License :: OSI Approved :: BSD License",
     ],

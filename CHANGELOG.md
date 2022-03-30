@@ -5,9 +5,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
- ###
+###
+
+## [0.4.0] - 2022-03-30
+###
  - Drop python2.7 (Fixes #14)
- - Require pytest>=6.0
+ - Drop python3.5 and python3.6
+ - Require pytest>=7.0
 
 ## [0.3.1] - 2020-08-05
 ###
