@@ -9,17 +9,17 @@ https://github.com/sphinx-doc/sphinx/blob/master/sphinx/ext/doctest.py
 
 import doctest
 import enum
-from pathlib import Path
 import re
 import sys
 import textwrap
 import traceback
+from pathlib import Path
 
 import _pytest.doctest
 import pytest
+from _pytest.doctest import DoctestItem
 from _pytest.doctest import _is_mocked
 from _pytest.doctest import _patch_unwrap_mock_aware
-from _pytest.doctest import DoctestItem
 from _pytest.pathlib import import_path
 
 
