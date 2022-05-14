@@ -520,7 +520,10 @@ class SphinxDoctestModule(pytest.Module):
                         seen,
                     )
 
-        finder = MockAwareDocTestFinder(parser=SphinxDocTestParser())
+        if sys.version_info < (3, 10):
+            finder = MockAwareDocTestFinder(parser=SphinxDocTestParser())
+        else:
+            finder = doctest.DocTestFinder(parser=SphinxDocTestParser())
 
         runner = SphinxDocTestRunner(
             verbose=0,
