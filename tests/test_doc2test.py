@@ -8,9 +8,10 @@ from pytest_sphinx import docstring2examples
 from pytest_sphinx import get_sections
 
 
-@pytest.mark.parametrize("in_between_content", ["", "\nsome text\nmore text"])
-def test_simple(in_between_content: str) -> None:
-    doc = """
+@pytest.mark.parametrize(
+    "doc",
+    [
+        """
 .. testcode::
 
     import pprint
@@ -20,9 +21,27 @@ def test_simple(in_between_content: str) -> None:
 
     {{'3': 4,
      '5': 6}}
-""".format(
-        in_between_content
-    )
+""",
+        """
+```{{eval-rst}}
+.. testcode::
+
+    import pprint
+    pprint.pprint({{'3': 4, '5': 6}})
+```
+{}
+```{{eval-rst}}
+.. testoutput::
+
+    {{'3': 4,
+     '5': 6}}
+```
+""",
+    ],
+)
+@pytest.mark.parametrize("in_between_content", ["", "\nsome text\nmore text"])
+def test_simple(doc: str, in_between_content: str) -> None:
+    doc = doc.format(in_between_content)
 
     examples = docstring2examples(doc)
     assert len(examples) == 1
