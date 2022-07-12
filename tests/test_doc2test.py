@@ -82,9 +82,11 @@ def test_with_options(doc: str) -> None:
     assert example.lineno == 5
 
 
-def test_indented() -> None:
-    doc = textwrap.dedent(
-        """
+@pytest.mark.parametrize(
+    "doc",
+    [
+        textwrap.dedent(
+            """
     Examples:
         some text
 
@@ -96,8 +98,29 @@ def test_indented() -> None:
 
             Banana
     """
-    )
+        ),
+        textwrap.dedent(
+            """
+    Examples:
+        some text
 
+        ```{eval-rst}
+        .. testcode::
+
+            print("Banana")
+        ```
+
+        ```{eval-rst}
+        .. testoutput::
+
+            Banana
+        ```
+    """
+        ),
+    ],
+    ids=["rst", "myst-eval-rst"],
+)
+def test_indented(doc: str) -> None:
     examples = docstring2examples(doc)
     assert len(examples) == 1
     example = examples[0]
