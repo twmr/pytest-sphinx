@@ -70,9 +70,10 @@ _OPTION_DIRECTIVE_RE = re.compile(r':options:\s*([^\n\'"]*)$')
 _OPTION_SKIPIF_RE = re.compile(r':skipif:\s*([^\n\'"]*)$')
 
 _DIRECTIVE_RE = re.compile(
-    r"\s*\.\. ("
-    r"testcode|testoutput|testsetup|testcleanup|doctest"
-    r')::\s*([^\n\'"]*)$'
+    r"""\s*\.\.\s
+    (testcode|testoutput|testsetup|testcleanup|doctest)
+    ::\s*([^\n'"]*)$
+    """, re.VERBOSE
 )
 
 
