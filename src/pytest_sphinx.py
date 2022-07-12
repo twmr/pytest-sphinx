@@ -97,6 +97,7 @@ _OPTION_SKIPIF_RE = re.compile(r':skipif:\s*([^\n\'"]*)$')
 
 _DIRECTIVE_RE = re.compile(
     r"""
+    (?P<myst_directive>`{3}{eval-rst}\n?)?
     \s*\.\.\s
     (?P<directive>(testcode|testoutput|testsetup|testcleanup|doctest))
     ::\s*
