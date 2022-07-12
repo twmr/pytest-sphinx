@@ -34,8 +34,10 @@ def test_simple(in_between_content: str) -> None:
     assert example.lineno == 5
 
 
-def test_with_options() -> None:
-    doc = """
+@pytest.mark.parametrize(
+    "doc",
+    [
+        """
 .. testcode::
 
     import pprint
@@ -45,8 +47,27 @@ def test_with_options() -> None:
     :options: +NORMALIZE_WHITESPACE, +ELLIPSIS
 
     {'3': 4,
-     '5': 6}"""
+     '5': 6}""",
+        """
+```{eval-rst}
+.. testcode::
 
+    import pprint
+    pprint.pprint({'3': 4, '5': 6})
+```
+
+```{eval-rst}
+.. testoutput::
+    :options: +NORMALIZE_WHITESPACE, +ELLIPSIS
+
+    {'3': 4,
+     '5': 6}
+```
+""",
+    ],
+    ids=["rst", "myst-eval-rst"],
+)
+def test_with_options(doc: str) -> None:
     examples = docstring2examples(doc)
     assert len(examples) == 1
     example = examples[0]
