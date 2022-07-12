@@ -70,10 +70,14 @@ _OPTION_DIRECTIVE_RE = re.compile(r':options:\s*([^\n\'"]*)$')
 _OPTION_SKIPIF_RE = re.compile(r':skipif:\s*([^\n\'"]*)$')
 
 _DIRECTIVE_RE = re.compile(
-    r"""\s*\.\.\s
-    (testcode|testoutput|testsetup|testcleanup|doctest)
-    ::\s*([^\n'"]*)$
-    """, re.VERBOSE
+    r"""
+    \s*\.\.\s
+    (?P<directive>(testcode|testoutput|testsetup|testcleanup|doctest))
+    ::\s*
+    (?P<argument>([^\n'"]*))
+    $
+    """,
+    re.VERBOSE,
 )
 
 
@@ -205,8 +209,9 @@ def get_sections(docstring):
 
         match = _DIRECTIVE_RE.match(line)
         if match:
-            directive = getattr(SphinxDoctestDirectives, match.group(1).upper())
-            groups = [x.strip() for x in (match.group(2) or "default").split(",")]
+            group = match.groupdict()
+            directive = getattr(SphinxDoctestDirectives, group["directive"].upper())
+            groups = [x.strip() for x in (group["argument"] or "default").split(",")]
             indentation = _get_indentation(line)
             # find the end of the block
             j = i
