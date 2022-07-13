@@ -116,6 +116,49 @@ class TestDirectives:
         plugin_result = testdir.runpytest("--doctest-glob=index.rst").stdout
         plugin_result.fnmatch_lines(["*=== 1 passed in *"])
 
+    def test_doctest(self, testdir, sphinx_tester):
+        code = """
+            .. doctest::
+
+               >>> print("msg from testcode directive")
+               msg from testcode directive
+            """
+
+        sphinx_output = sphinx_tester(code)
+        assert "1 items passed all tests" in sphinx_output
+
+        plugin_result = testdir.runpytest("--doctest-glob=index.rst").stdout
+        plugin_result.fnmatch_lines(["*=== 1 passed in *"])
+
+    def test_doctest_multiple(self, testdir, sphinx_tester):
+        code = """
+            .. doctest::
+
+                >>> import operator
+
+                >>> operator.lt(1, 3)
+                True
+
+                >>> operator.lt(6, 2)
+                False
+
+            .. doctest::
+
+                >>> four = 2 + 2
+
+                >>> four
+                4
+
+                >>> print(f'Two plus two: {four}')
+                Two plus two: 4
+            """
+
+        sphinx_output = sphinx_tester(code)
+        assert "1 items passed all tests" in sphinx_output
+
+        plugin_result = testdir.runpytest("--doctest-glob=index.rst").stdout
+        plugin_result.fnmatch_lines(["*=== 1 passed in *"])
+
     @pytest.mark.parametrize("testcode", ["raise RuntimeError", "pass", "print(1234)"])
     def test_skipif_true(self, testdir, sphinx_tester, testcode):
         code = """
