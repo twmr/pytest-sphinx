@@ -200,3 +200,38 @@ def test_doctest_namespace(testdir):
 
     result = testdir.runpytest()
     result.stdout.fnmatch_lines(["*=== 1 passed in *"])
+
+
+def test_doctest_directive(testdir):
+    testdir.maketxtfile(
+        test_something="""
+        This is a paragraph. This is the
+        next sentence.
+        
+        .. doctest::
+
+           >>> assert False
+           Traceback (most recent call last):
+           ...
+           AssertionError
+    """
+    )
+
+    result = testdir.runpytest()
+    result.stdout.fnmatch_lines(["*=== 1 passed in *"])
+
+
+    testdir.maketxtfile(
+        test_something="""
+        This is a paragraph. This is the
+        next sentence.
+        
+        .. doctest::
+
+           >>> assert False
+    """
+    )
+
+    result = testdir.runpytest()
+    result.stdout.fnmatch_lines(["*=== 1 failed in *"])
+
