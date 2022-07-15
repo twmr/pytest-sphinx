@@ -83,7 +83,7 @@ def test_simple_doctest_failure(sphinx_tester):
     """
     )
 
-    assert expected in output, "{!r}\n\n{!r}".format(expected, output)
+    assert expected in output, f"{expected!r}\n\n{output!r}"
 
 
 def test_simple_doctest_success(sphinx_tester):

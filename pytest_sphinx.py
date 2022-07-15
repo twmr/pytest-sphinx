@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 http://www.sphinx-doc.org/en/stable/ext/doctest.html
 https://github.com/sphinx-doc/sphinx/blob/master/sphinx/ext/doctest.py
@@ -132,7 +131,7 @@ def _split_into_body_and_options(section_content):
                     or option[1:] not in doctest.OPTIONFLAGS_BY_NAME
                 ):
                     raise ValueError(
-                        "doctest " "has an invalid option {}".format(option)
+                        f"doctest has an invalid option {option}"
                     )
                 flag = doctest.OPTIONFLAGS_BY_NAME[option[1:]]
                 flag_settings[flag] = option[0] == "+"
@@ -151,7 +150,7 @@ def _split_into_body_and_options(section_content):
 
     if i and lines[i].strip():
         # no newline between option block and body
-        raise ValueError("invalid option block: {!r}".format(section_content))
+        raise ValueError(f"invalid option block: {section_content!r}")
 
     return body, skipif_expr, flag_settings
 
@@ -166,18 +165,18 @@ def _get_next_textoutputsections(sections, index):
             break
 
 
-class Section(object):
+class Section:
     def __init__(self, directive, content, lineno, groups=None):
-        super(Section, self).__init__()
+        super().__init__()
         self.directive = directive
         self.groups = groups
         self.lineno = lineno
         body, skipif_expr, options = _split_into_body_and_options(content)
 
         if skipif_expr and self.directive not in _DIRECTIVES_W_SKIPIF:
-            raise ValueError(":skipif: not allowed in {}".format(self.directive))
+            raise ValueError(f":skipif: not allowed in {self.directive}")
         if options and self.directive not in _DIRECTIVES_W_OPTIONS:
-            raise ValueError(":options: not allowed in {}".format(self.directive))
+            raise ValueError(f":options: not allowed in {self.directive}")
         self.body = body
         self.skipif_expr = skipif_expr
         self.options = options
@@ -438,7 +437,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
         return doctest.TestResults(failures, tries)
 
 
-class SphinxDocTestParser(object):
+class SphinxDocTestParser:
     def get_doctest(self, docstring, globs, name, filename, lineno):
         # TODO document why we need to overwrite? get_doctest
         return doctest.DocTest(

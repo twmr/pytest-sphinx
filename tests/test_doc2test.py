@@ -91,7 +91,7 @@ def test_cartopy():
     rstpath = os.path.join(
         os.path.dirname(__file__), "testdata", "using_the_shapereader.rst"
     )
-    with open(rstpath, "r") as fh:
+    with open(rstpath) as fh:
         sections = get_sections(fh.read())
 
     assert len(sections) == 9
