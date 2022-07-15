@@ -14,6 +14,7 @@ used in rst files as well as in docstrings of python modules.
 Features
 --------
 
+* support for the ``doctest`` directive
 * support for ``testcode`` and ``testoutput`` directives
 * support for ``testsetup`` and ``testcleanup`` is planned (pull-requests welcome)
 * support for parsing global optionflags (``doctest_optionflags``) from
