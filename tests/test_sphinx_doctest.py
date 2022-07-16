@@ -46,8 +46,11 @@ class SphinxDoctestRunner:
         logger.info("content of index.rst:\n%s", rst_file_content)
 
         cmd = ["sphinx-build", "-M", "doctest", "source", ""]
-        if sphinxopts:
-            cmd.append(sphinxopts)
+        if sphinxopts is not None:
+            if isinstance(sphinxopts, list):
+                cmd.extend(sphinxopts)
+            else:
+                cmd.append(sphinxopts)
 
         def to_str(subprocess_output: Union[str, bytes]) -> str:
             if isinstance(subprocess_output, bytes):
