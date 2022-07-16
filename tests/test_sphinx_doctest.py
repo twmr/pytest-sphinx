@@ -5,6 +5,8 @@ import subprocess
 import textwrap
 from pathlib import Path
 from typing import Iterator
+from typing import List
+from typing import Optional
 from typing import Union
 
 import pytest
@@ -37,13 +39,20 @@ class SphinxDoctestRunner:
         )
 
     def __call__(
-        self, rst_file_content: str, must_raise: bool = False, sphinxopts: None = None
-    ) -> str:
+        self,
+        file_content: str,
+        must_raise: bool = False,
+        file_type: str = "rst",
+        sphinxopts: Optional[List[str]] = None,
+    ):
         index_rst = self.tmp_path / "source" / "index.rst"
-        rst_file_content = textwrap.dedent(rst_file_content)
-        index_rst.write_text(rst_file_content, encoding="utf-8")
+        index_file = self.tmp_path / "source" / f"index.{file_type}"
+        file_content = textwrap.dedent(file_content)
+        index_file.write_text(file_content, encoding="utf-8")
+        if file_type == "md":  # Delete sphinx-quickstart's .rst file
+            index_rst.unlink()
         logger.info("CWD: %s", os.getcwd())
-        logger.info("content of index.rst:\n%s", rst_file_content)
+        logger.info(f"content of index.{file_type}:\n%s", file_content)
 
         cmd = ["sphinx-build", "-M", "doctest", "source", ""]
         if sphinxopts is not None:
@@ -68,7 +77,9 @@ class SphinxDoctestRunner:
 
 
 @pytest.fixture
-def sphinx_tester(tmpdir: LocalPath) -> Iterator[SphinxDoctestRunner]:
+def sphinx_tester(
+    tmpdir: LocalPath, request: pytest.FixtureRequest
+) -> Iterator[SphinxDoctestRunner]:
     with tmpdir.as_cwd():
         yield SphinxDoctestRunner(tmpdir)
 
@@ -140,7 +151,6 @@ class TestDirectives:
                >>> print("msg from testcode directive")
                msg from testcode directive
             """
-
         sphinx_output = sphinx_tester(code)
         assert "1 items passed all tests" in sphinx_output
 
