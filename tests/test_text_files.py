@@ -220,7 +220,6 @@ def test_doctest_directive(testdir):
     result = testdir.runpytest()
     result.stdout.fnmatch_lines(["*=== 1 passed in *"])
 
-
     testdir.maketxtfile(
         test_something="""
         This is a paragraph. This is the
@@ -234,4 +233,3 @@ def test_doctest_directive(testdir):
 
     result = testdir.runpytest()
     result.stdout.fnmatch_lines(["*=== 1 failed in *"])
-
