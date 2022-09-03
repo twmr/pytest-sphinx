@@ -1,0 +1,45 @@
+[project]
+name = "pytest.sphinx"
+version = "0.4.0"
+description = "Doctest plugin for pytest with support for Sphinx-specific doctest-directives"
+readme = "README.rst"
+requires-python = ">=3.7"
+license = { file = "LICENSE" }
+keywords = ["sphinx", "pytest", "rst"]
+authors = [
+    { name="Thomas Hisch", email="t.hisch@gmail.com" }
+]
+maintainers = [
+    { name="Thomas Hisch", email="t.hisch@gmail.com" }
+]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Pytest",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Testing",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: BSD License",
+]
+
+# Requirements
+dependencies = [
+    "pytest >=7.0.0",
+]
+
+[project.urls]
+homepage = "https://github.com/thisch/pytest-sphinx"
+
+[project.entry-points."pytest11"]
+"sphinx" = "pytest_sphinx"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
