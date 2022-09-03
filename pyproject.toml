@@ -34,6 +34,13 @@ dependencies = [
     "pytest >=7.0.0",
 ]
 
+[project.optional-dependencies]
+lint = [
+    "isort >= 5",
+    "flake8",
+    "black"
+]
+
 [project.urls]
 homepage = "https://github.com/thisch/pytest-sphinx"
 
