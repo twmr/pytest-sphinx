@@ -130,9 +130,7 @@ def _split_into_body_and_options(section_content):
                     option[0] not in "+-"
                     or option[1:] not in doctest.OPTIONFLAGS_BY_NAME
                 ):
-                    raise ValueError(
-                        f"doctest has an invalid option {option}"
-                    )
+                    raise ValueError(f"doctest has an invalid option {option}")
                 flag = doctest.OPTIONFLAGS_BY_NAME[option[1:]]
                 flag_settings[flag] = option[0] == "+"
             i += 1
