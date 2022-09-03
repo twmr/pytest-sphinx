@@ -32,6 +32,7 @@ classifiers = [
 # Requirements
 dependencies = [
     "pytest >=7.0.0",
+    "docutils"
 ]
 
 [project.optional-dependencies]
