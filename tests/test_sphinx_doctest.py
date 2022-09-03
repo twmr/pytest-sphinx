@@ -127,13 +127,10 @@ class TestDirectives:
         self, testdir: Testdir, sphinx_tester: SphinxDoctestRunner
     ) -> None:
         code = """
-            .. testcode::
+            .. doctest::
 
-                print("msg from testcode directive")
-
-            .. testoutput::
-
-                msg from testcode directive
+               >>> print("msg from testcode directive")
+               msg from testcode directive
             """
 
         sphinx_output = sphinx_tester(code)
@@ -226,13 +223,10 @@ class TestDirectives:
         self, testdir: Testdir, sphinx_tester: SphinxDoctestRunner, testcode: str
     ) -> None:
         code = """
-            .. testcode::
-
-                {}
-
-            .. testoutput::
+            .. doctest::
                 :skipif: True
 
+                >>> {}
                 NOT EVALUATED
             """.format(
             testcode
@@ -259,14 +253,11 @@ class TestDirectives:
         self, testdir: Testdir, sphinx_tester: SphinxDoctestRunner, testcode: str
     ) -> None:
         code = """
-            .. testcode::
+            .. docutils::
+               :skipif: False
 
-                {}
-
-            .. testoutput::
-                :skipif: False
-
-                EVALUATED
+               >>> {}
+               EVALUATED
             """.format(
             testcode
         )
@@ -294,21 +285,18 @@ class TestDirectives:
         # sections. IMO this must lead to a testfailure, which is currently
         # not the case in sphinx -> Create sphinx ticket
         code = """
-            .. testcode::
-
-                raise RuntimeError
-
-            .. testoutput::
+            .. docutils::
                 :skipif: True
 
+                >>> raise RuntimeError
                 NOT EVALUATED
 
-            .. testoutput::
+            .. docutils::
                 :skipif: False
 
                 Traceback (most recent call last):
                     ...
-                {}
+                >>> {}
             """.format(
             "ValueError" if wrong_output_assertion else "RuntimeError"
         )
@@ -326,27 +314,3 @@ class TestDirectives:
         else:
             assert "1 items passed all tests" in sphinx_output
             plugin_output.fnmatch_lines(["*=== 1 passed in *"])
-
-    @pytest.mark.parametrize("testcode", ["raise RuntimeError", "pass", "print(1234)"])
-    def test_skipif_true_in_testcode(
-        self, testdir: Testdir, sphinx_tester: SphinxDoctestRunner, testcode: str
-    ) -> None:
-        code = """
-            .. testcode::
-                :skipif: True
-
-                {}
-
-            .. testoutput::
-                :skipif: False
-
-                NOT EVALUATED
-            """.format(
-            testcode
-        )
-
-        sphinx_output = sphinx_tester(code, must_raise=False)
-        assert "0 tests" in sphinx_output
-
-        plugin_output = testdir.runpytest("--doctest-glob=index.rst").stdout
-        plugin_output.fnmatch_lines(["collected 0 items"])
