@@ -326,7 +326,7 @@ class DocutilsDocTestFinder:
                 or isinstance(node, nodes.doctest_block)
             )
 
-        for idx, node in enumerate(doc.findall(condition)):
+        for idx, node in enumerate(doc.traverse(condition)):
             logger.debug(f"() node: {node.astext()}")
             assert isinstance(node, nodes.Element)
             test_name = node.get("groups")
