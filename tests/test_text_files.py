@@ -204,10 +204,10 @@ def test_doctest_namespace(testdir):
 
 def test_doctest_directive(testdir):
     testdir.maketxtfile(
-        test_something="""
+        test_something=r"""
         This is a paragraph. This is the
         next sentence.
-        
+
         .. doctest::
 
            >>> assert False
@@ -221,10 +221,10 @@ def test_doctest_directive(testdir):
     result.stdout.fnmatch_lines(["*=== 1 passed in *"])
 
     testdir.maketxtfile(
-        test_something="""
+        test_something=r"""
         This is a paragraph. This is the
         next sentence.
-        
+
         .. doctest::
 
            >>> assert False
