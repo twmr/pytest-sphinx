@@ -1,5 +1,5 @@
 [project]
-name = "pytest.sphinx"
+name = "pytest-sphinx"
 version = "0.4.0"
 description = "Doctest plugin for pytest with support for Sphinx-specific doctest-directives"
 readme = "README.rst"
