@@ -6,7 +6,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ###
+
+## [0.5.0] - 2022-09-06
+###
  - Mention in the README that the doctest directive is supported.
+ - internal: Improve CI setup, from [Tony
+   Narlock](https://www.git-pull.com).
+ - internal: Switch to a src/ structure, from [Tony
+   Narlock](https://www.git-pull.com).
+ - internal: Switch from setup.py to a PEP-621 pyproject.toml, from
+   [Tony Narlock](https://www.git-pull.com).
 
 ## [0.4.0] - 2022-03-30
 ###
