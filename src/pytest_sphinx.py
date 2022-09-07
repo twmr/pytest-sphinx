@@ -485,7 +485,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
                     )
                 failures += 1
             else:
-                assert False, ("unknown outcome", outcome)
+                raise AssertionError(f"unknown outcome: {outcome}")
 
             if failures and self.optionflags & doctest.FAIL_FAST:
                 break
