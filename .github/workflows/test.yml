@@ -50,6 +50,9 @@ jobs:
       - name: Lint (isort)
         run: isort --check .
 
+      - name: Lint (mypy)
+        run: mypy .
+
       - name: Unit tests
         run: |
           tox -e ci-py -- -v --color=yes
