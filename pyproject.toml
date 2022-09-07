@@ -51,6 +51,9 @@ homepage = "https://github.com/thisch/pytest-sphinx"
 [tool.isort]
 profile = "black"
 
+[tool.mypy]
+strict = true
+
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
