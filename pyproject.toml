@@ -38,7 +38,8 @@ dependencies = [
 lint = [
     "isort >= 5",
     "flake8",
-    "black"
+    "black",
+    "mypy"
 ]
 
 [project.urls]
