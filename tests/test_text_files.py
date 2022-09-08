@@ -1,11 +1,13 @@
 import _pytest.doctest
+from _pytest.legacypath import Testdir
+from _pytest.pytester import Pytester
 
 import pytest_sphinx
 
 
-def test_collect_testtextfile(testdir):
-    w = testdir.maketxtfile(whatever="")
-    checkfile = testdir.maketxtfile(
+def test_collect_testtextfile(pytester: Pytester) -> None:
+    w = pytester.maketxtfile(whatever="")
+    checkfile = pytester.maketxtfile(
         test_something="""
         alskdjalsdk
 
@@ -19,17 +21,17 @@ def test_collect_testtextfile(testdir):
     """
     )
 
-    for x in (testdir.tmpdir, checkfile):
-        items, reprec = testdir.inline_genitems(x)
+    for x in (pytester.path, checkfile):
+        items, reprec = pytester.inline_genitems(x)
         assert len(items) == 1
         assert isinstance(items[0], _pytest.doctest.DoctestItem)
         assert isinstance(items[0].parent, pytest_sphinx.SphinxDoctestTextfile)
     # Empty file has no items.
-    items, reprec = testdir.inline_genitems(w)
+    items, reprec = pytester.inline_genitems(w)
     assert not items
 
 
-def test_successful_multiline_doctest_in_text_file(testdir):
+def test_successful_multiline_doctest_in_text_file(testdir: Testdir) -> None:
     testdir.maketxtfile(
         test_something="""
         .. testcode::
@@ -48,7 +50,7 @@ def test_successful_multiline_doctest_in_text_file(testdir):
     result.stdout.fnmatch_lines(["*=== 1 passed in *"])
 
 
-def test_successful_doctest_in_text_file(testdir):
+def test_successful_doctest_in_text_file(testdir: Testdir) -> None:
     testdir.maketxtfile(
         test_something="""
         alskdjalsdk
@@ -68,7 +70,7 @@ def test_successful_doctest_in_text_file(testdir):
     result.stdout.fnmatch_lines(["*=== 1 passed in *"])
 
 
-def test_failing_doctest_in_text_file(testdir):
+def test_failing_doctest_in_text_file(testdir: Testdir) -> None:
     testdir.maketxtfile(
         test_something="""
         alskdjalsdk
@@ -90,7 +92,7 @@ def test_failing_doctest_in_text_file(testdir):
     )
 
 
-def test_expected_exception_doctest(testdir):
+def test_expected_exception_doctest(testdir: Testdir) -> None:
     testdir.maketxtfile(
         test_something="""
         .. testcode::
@@ -109,7 +111,7 @@ def test_expected_exception_doctest(testdir):
     result.stdout.fnmatch_lines(["*=== 1 passed in *"])
 
 
-def test_global_optionflags(testdir):
+def test_global_optionflags(testdir: Testdir) -> None:
     testdir.makeini(
         """
         [pytest]
@@ -133,7 +135,7 @@ def test_global_optionflags(testdir):
     result.assertoutcome(passed=1, failed=0)
 
 
-def test_no_ellipsis_in_global_optionflags(testdir):
+def test_no_ellipsis_in_global_optionflags(testdir: Testdir) -> None:
     testdir.makeini(
         """
         [pytest]
@@ -159,7 +161,7 @@ def test_no_ellipsis_in_global_optionflags(testdir):
     )
 
 
-def test_skipif_non_builtin(testdir):
+def test_skipif_non_builtin(testdir: Testdir) -> None:
     testdir.maketxtfile(
         test_something="""
         .. testcode::
@@ -177,7 +179,7 @@ def test_skipif_non_builtin(testdir):
     result.stdout.fnmatch_lines(["*NameError:*name 'pd' is not defined"])
 
 
-def test_doctest_namespace(testdir):
+def test_doctest_namespace(testdir: Testdir) -> None:
     testdir.maketxtfile(
         test_something="""
         .. testcode::
@@ -202,7 +204,7 @@ def test_doctest_namespace(testdir):
     result.stdout.fnmatch_lines(["*=== 1 passed in *"])
 
 
-def test_doctest_directive(testdir):
+def test_doctest_directive(testdir: Testdir) -> None:
     testdir.maketxtfile(
         test_something=r"""
         This is a paragraph. This is the

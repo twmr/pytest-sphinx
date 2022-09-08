@@ -1,7 +1,9 @@
 import textwrap
 
+from _pytest.legacypath import Testdir
 
-def test_syntax_error_in_module_doctest(testdir):
+
+def test_syntax_error_in_module_doctest(testdir: Testdir) -> None:
 
     testdir.makepyfile(
         textwrap.dedent(
@@ -25,7 +27,7 @@ def test_syntax_error_in_module_doctest(testdir):
     )
 
 
-def test_failing_module_doctest(testdir):
+def test_failing_module_doctest(testdir: Testdir) -> None:
 
     testdir.makepyfile(
         textwrap.dedent(
@@ -50,7 +52,7 @@ def test_failing_module_doctest(testdir):
     )
 
 
-def test_failing_function_doctest(testdir):
+def test_failing_function_doctest(testdir: Testdir) -> None:
     testdir.makepyfile(
         textwrap.dedent(
             """
@@ -79,7 +81,7 @@ def test_failing_function_doctest(testdir):
     )
 
 
-def test_working_module_doctest(testdir):
+def test_working_module_doctest(testdir: Testdir) -> None:
 
     testdir.makepyfile(
         textwrap.dedent(
@@ -101,7 +103,7 @@ def test_working_module_doctest(testdir):
     result.stdout.fnmatch_lines(["*=== 1 passed in *"])
 
 
-def test_working_function_doctest(testdir):
+def test_working_function_doctest(testdir: Testdir) -> None:
     testdir.makepyfile(
         textwrap.dedent(
             """
@@ -126,7 +128,7 @@ def test_working_function_doctest(testdir):
     result.stdout.fnmatch_lines(["*=== 1 passed in *"])
 
 
-def test_working_module_doctest_nospaces(testdir):
+def test_working_module_doctest_nospaces(testdir: Testdir) -> None:
 
     testdir.makepyfile(
         textwrap.dedent(
@@ -146,7 +148,7 @@ def test_working_module_doctest_nospaces(testdir):
     result.stdout.fnmatch_lines(["*=== 1 passed in *"])
 
 
-def test_multiple_doctests_in_single_file(testdir):
+def test_multiple_doctests_in_single_file(testdir: Testdir) -> None:
 
     testdir.makepyfile(
         textwrap.dedent(
@@ -182,7 +184,7 @@ def test_multiple_doctests_in_single_file(testdir):
     result.stdout.fnmatch_lines(["*=== 2 passed in *"])
 
 
-def test_indented(testdir):
+def test_indented(testdir: Testdir) -> None:
     testdir.makepyfile(
         textwrap.dedent(
             """
@@ -206,7 +208,7 @@ def test_indented(testdir):
     result.stdout.fnmatch_lines(["*=== 1 passed in *"])
 
 
-def test_workaround_for_doctest_mockobj_bug(testdir):
+def test_workaround_for_doctest_mockobj_bug(testdir: Testdir) -> None:
     # see https://github.com/pytest-dev/pytest/issues/3456
 
     testdir.makepyfile(
@@ -232,7 +234,7 @@ def test_workaround_for_doctest_mockobj_bug(testdir):
     result.stdout.fnmatch_lines(["*=== 1 passed in *"])
 
 
-def test_with_conftest(testdir):
+def test_with_conftest(testdir: Testdir) -> None:
     content = """
         \"\"\"
         .. testcode::

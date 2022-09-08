@@ -2,25 +2,26 @@ import doctest
 import textwrap
 
 import pytest
+from _pytest.legacypath import Testdir
 
 from pytest_sphinx import _split_into_body_and_options
 
 
-def test_only_options_empty_body():
+def test_only_options_empty_body() -> None:
     want = "\n:options: +NORMALIZE_WHITESPACE\n"
 
     with pytest.raises(ValueError, match="no code/output"):
         _split_into_body_and_options(want)
 
 
-def test_only_options_nonewline():
+def test_only_options_nonewline() -> None:
     want = "\n:options: +NORMALIZE_WHITESPACE\ncodeblock"
 
     with pytest.raises(ValueError, match="invalid option block"):
         _split_into_body_and_options(want)
 
 
-def test_mulitple_options():
+def test_mulitple_options() -> None:
     want = "\n:options: +NORMALIZE_WHITESPACE, -ELLIPSIS\n\ncodeblock"
 
     ret = _split_into_body_and_options(want)
@@ -32,7 +33,7 @@ def test_mulitple_options():
     }
 
 
-def test_multiline_code():
+def test_multiline_code() -> None:
     want = textwrap.dedent(
         """
         :options: +NORMALIZE_WHITESPACE
@@ -50,7 +51,7 @@ def test_multiline_code():
     }
 
 
-def test_hide():
+def test_hide() -> None:
     # test that the hide option is ignored
     want = textwrap.dedent(
         """
@@ -68,7 +69,7 @@ def test_hide():
     }
 
 
-def test_options_and_text():
+def test_options_and_text() -> None:
     want = textwrap.dedent(
         """
         :options: +NORMALIZE_WHITESPACE
@@ -84,7 +85,7 @@ def test_options_and_text():
 
 @pytest.mark.parametrize("expr", ["True"])
 @pytest.mark.parametrize("with_options", [True, False])
-def test_skipif_and_text(expr, with_options):
+def test_skipif_and_text(expr: str, with_options: bool) -> None:
     want = textwrap.dedent(
         """
         :skipif: {}
@@ -107,7 +108,7 @@ def test_skipif_and_text(expr, with_options):
         assert ret[2] == {}
 
 
-def test_check_output_with_whitespace_normalization():
+def test_check_output_with_whitespace_normalization() -> None:
     # basically a unittest for a method in the doctest stdlib
     got = "{'a': 3, 'b': 44, 'c': 20}"
     want = textwrap.dedent(
@@ -129,7 +130,7 @@ def test_check_output_with_whitespace_normalization():
     assert got == want
 
 
-def test_doctest_with_whitespace_normalization(testdir):
+def test_doctest_with_whitespace_normalization(testdir: Testdir) -> None:
     testdir.maketxtfile(
         test_something="""
         .. testcode::

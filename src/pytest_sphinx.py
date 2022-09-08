@@ -5,7 +5,6 @@ https://github.com/sphinx-doc/sphinx/blob/master/sphinx/ext/doctest.py
 * TODO
 ** CLEANUP: use the sphinx directive parser from the sphinx project
 """
-
 import doctest
 import enum
 import re
@@ -13,13 +12,31 @@ import sys
 import textwrap
 import traceback
 from pathlib import Path
+from typing import TYPE_CHECKING
+from typing import Any
+from typing import Dict
+from typing import Iterator
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 import _pytest.doctest
 import pytest
+from _pytest.config import Config
 from _pytest.doctest import DoctestItem
 from _pytest.doctest import _is_mocked
 from _pytest.doctest import _patch_unwrap_mock_aware
+from _pytest.main import Session
 from _pytest.pathlib import import_path
+from _pytest.python import Package
+
+if TYPE_CHECKING:
+    import io
+    import pdb
+    from doctest import _Out
+
+    _SpoofOut = io.StringIO
 
 
 class SphinxDoctestDirectives(enum.Enum):
@@ -43,21 +60,31 @@ _DIRECTIVES_W_SKIPIF = (
 )
 
 
-def pytest_collect_file(path, parent):
+def pytest_collect_file(
+    file_path: Path, parent: Union[Session, Package]
+) -> Optional[Union["SphinxDoctestModule", "SphinxDoctestTextfile"]]:
     config = parent.config
-    if path.ext == ".py":
+    if file_path.suffix == ".py":
         if config.option.doctestmodules:
-            return SphinxDoctestModule.from_parent(parent, path=Path(path.strpath))
-    elif _is_doctest(config, path, parent):
-        return SphinxDoctestTextfile.from_parent(parent, path=Path(path.strpath))
+            mod: Union[
+                "SphinxDoctestModule", "SphinxDoctestTextfile"
+            ] = SphinxDoctestModule.from_parent(parent, path=file_path)
+            return mod
+    elif _is_doctest(config, file_path, parent):
+        return SphinxDoctestTextfile.from_parent(parent, path=file_path)  # type: ignore
+    return None
 
 
-def _is_doctest(config, path, parent):
-    if path.ext in (".txt", ".rst") and parent.session.isinitpath(path):
+GlobDict = Dict[str, Any]
+
+
+def _is_doctest(config: Config, path: Path, parent: Union[Session, Package]) -> bool:
+    if path.suffix in (".txt", ".rst") and parent.session.isinitpath(path):
         return True
     globs = config.getoption("doctestglob") or ["test*.txt"]
+    assert isinstance(globs, list)
     for glob in globs:
-        if path.check(fnmatch=glob):
+        if path.match(path_pattern=glob):
             return True
     return False
 
@@ -80,7 +107,9 @@ _DIRECTIVE_RE = re.compile(
 )
 
 
-def _split_into_body_and_options(section_content):
+def _split_into_body_and_options(
+    section_content: str,
+) -> Tuple[str, Optional[str], Dict[int, bool]]:
     """Parse the the full content of a directive and split it.
 
     It is split into a string, where the options (:options:, :hide: and
@@ -119,12 +148,14 @@ def _split_into_body_and_options(section_content):
     for line in lines:
         stripped = line.strip()
         if _OPTION_SKIPIF_RE.match(stripped):
-            skipif_expr = _OPTION_SKIPIF_RE.match(stripped).group(1)
+            skipif_match = _OPTION_SKIPIF_RE.match(stripped)
+            assert skipif_match is not None
+            skipif_expr = skipif_match.group(1)
             i += 1
         elif _OPTION_DIRECTIVE_RE.match(stripped):
-            option_strings = (
-                _OPTION_DIRECTIVE_RE.match(stripped).group(1).replace(",", " ").split()
-            )
+            directive_match = _OPTION_DIRECTIVE_RE.match(stripped)
+            assert directive_match is not None
+            option_strings = directive_match.group(1).replace(",", " ").split()
             for option in option_strings:
                 if (
                     option[0] not in "+-"
@@ -153,7 +184,9 @@ def _split_into_body_and_options(section_content):
     return body, skipif_expr, flag_settings
 
 
-def _get_next_textoutputsections(sections, index):
+def _get_next_textoutputsections(
+    sections: List["Section"], index: int
+) -> Iterator["Section"]:
     """Yield successive TESTOUTPUT sections."""
     for j in range(index, len(sections)):
         section = sections[j]
@@ -163,8 +196,17 @@ def _get_next_textoutputsections(sections, index):
             break
 
 
+SectionGroups = Optional[List[str]]
+
+
 class Section:
-    def __init__(self, directive, content, lineno, groups=None):
+    def __init__(
+        self,
+        directive: SphinxDoctestDirectives,
+        content: str,
+        lineno: int,
+        groups: SectionGroups = None,
+    ) -> None:
         super().__init__()
         self.directive = directive
         self.groups = groups
@@ -180,14 +222,16 @@ class Section:
         self.options = options
 
 
-def get_sections(docstring):
+def get_sections(docstring: str) -> List[Union[Any, Section]]:
     lines = textwrap.dedent(docstring).splitlines()
     sections = []
 
-    def _get_indentation(line):
+    def _get_indentation(line: str) -> int:
         return len(line) - len(line.lstrip())
 
-    def add_match(directive, i, j, groups):
+    def add_match(
+        directive: SphinxDoctestDirectives, i: int, j: int, groups: SectionGroups
+    ) -> None:
         sections.append(
             Section(
                 directive,
@@ -227,28 +271,32 @@ def get_sections(docstring):
     return sections
 
 
-def docstring2examples(docstring, globs=None):
+def docstring2examples(
+    docstring: str, globs: Optional[GlobDict] = None
+) -> List[Union[Any, doctest.Example]]:
     """
     Parse all sphinx test directives in the docstring and create a
     list of examples.
     """
     # TODO subclass doctest.DocTestParser instead?
 
-    if not globs:
+    if globs is None:
         globs = {}
 
     sections = get_sections(docstring)
 
-    def get_testoutput_section_data(section):
+    def get_testoutput_section_data(
+        section: "Section",
+    ) -> Tuple[str, Dict[int, bool], int, Optional[Any]]:
         want = section.body
         exc_msg = None
-        options = {}
+        options: Dict[int, bool] = {}
 
         if section.skipif_expr and eval(section.skipif_expr, globs):
             want = ""
         else:
             options = section.options
-            match = doctest.DocTestParser._EXCEPTION_RE.match(want)
+            match = doctest.DocTestParser._EXCEPTION_RE.match(want)  # type: ignore
             if match:
                 exc_msg = match.group("msg")
 
@@ -302,7 +350,13 @@ class SphinxDocTestRunner(doctest.DebugRunner):
     `compile` function instead of 'exec'.
     """
 
-    def _DocTestRunner__run(self, test, compileflags, out):
+    _checker: "doctest.OutputChecker"
+    _fakeout: "_SpoofOut"
+    debugger: "pdb.Pdb"
+
+    def _DocTestRunner__run(
+        self, test: doctest.DocTest, compileflags: int, out: "_Out"
+    ) -> doctest.TestResults:
         """
         Run the examples in `test`.
 
@@ -389,7 +443,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
             else:
                 exc_msg = traceback.format_exception_only(*exception[:2])[-1]
                 if not quiet:
-                    got += doctest._exception_traceback(exception)
+                    got += doctest._exception_traceback(exception)  # type:ignore
 
                 # If `example.exc_msg` is None, then we weren't expecting
                 # an exception.
@@ -403,8 +457,10 @@ class SphinxDocTestRunner(doctest.DebugRunner):
                 # Another chance if they didn't care about the detail.
                 elif self.optionflags & doctest.IGNORE_EXCEPTION_DETAIL:
                     if check(
-                        doctest._strip_exception_details(example.exc_msg),
-                        doctest._strip_exception_details(exc_msg),
+                        doctest._strip_exception_details(  # type:ignore
+                            example.exc_msg,
+                        ),
+                        doctest._strip_exception_details(exc_msg),  # type:ignore
                         self.optionflags,
                     ):
                         outcome = SUCCESS
@@ -419,7 +475,14 @@ class SphinxDocTestRunner(doctest.DebugRunner):
                 failures += 1
             elif outcome is BOOM:
                 if not quiet:
-                    self.report_unexpected_exception(out, test, example, exception)
+                    assert exception is not None
+                    assert out is not None
+                    self.report_unexpected_exception(
+                        out,
+                        test,
+                        example,
+                        exception,  # type:ignore
+                    )
                 failures += 1
             else:
                 assert False, ("unknown outcome", outcome)
@@ -431,12 +494,19 @@ class SphinxDocTestRunner(doctest.DebugRunner):
         self.optionflags = original_optionflags
 
         # Record and return the number of failures and tries.
-        self._DocTestRunner__record_outcome(test, failures, tries)
+        self._DocTestRunner__record_outcome(test, failures, tries)  # type:ignore
         return doctest.TestResults(failures, tries)
 
 
 class SphinxDocTestParser:
-    def get_doctest(self, docstring, globs, name, filename, lineno):
+    def get_doctest(
+        self,
+        docstring: str,
+        globs: Dict[str, Any],
+        name: str,
+        filename: str,
+        lineno: int,
+    ) -> doctest.DocTest:
         # TODO document why we need to overwrite? get_doctest
         return doctest.DocTest(
             examples=docstring2examples(docstring, globs=globs),
@@ -451,16 +521,16 @@ class SphinxDocTestParser:
 class SphinxDoctestTextfile(pytest.Module):
     obj = None
 
-    def collect(self):
+    def collect(self) -> Iterator[_pytest.doctest.DoctestItem]:
         # inspired by doctest.testfile; ideally we would use it directly,
         # but it doesn't support passing a custom checker
         encoding = self.config.getini("doctest_encoding")
         text = self.fspath.read_text(encoding)
         name = self.fspath.basename
 
-        optionflags = _pytest.doctest.get_optionflags(self)
+        optionflags = _pytest.doctest.get_optionflags(self)  # type:ignore
         runner = SphinxDocTestRunner(
-            verbose=0,
+            verbose=False,
             optionflags=optionflags,
             checker=_pytest.doctest._get_checker(),
         )
@@ -476,12 +546,15 @@ class SphinxDoctestTextfile(pytest.Module):
 
         if test.examples:
             yield DoctestItem.from_parent(
-                parent=self, name=test.name, runner=runner, dtest=test
+                parent=self,  # type:ignore
+                name=test.name,
+                runner=runner,
+                dtest=test,
             )
 
 
 class SphinxDoctestModule(pytest.Module):
-    def collect(self):
+    def collect(self) -> Iterator[_pytest.doctest.DoctestItem]:
         if self.fspath.basename == "conftest.py":
             module = self.config.pluginmanager._importconftest(
                 self.path,
@@ -496,7 +569,7 @@ class SphinxDoctestModule(pytest.Module):
                     pytest.skip("unable to import module %r" % self.path)
                 else:
                     raise
-        optionflags = _pytest.doctest.get_optionflags(self)
+        optionflags = _pytest.doctest.get_optionflags(self)  # type:ignore
 
         class MockAwareDocTestFinder(doctest.DocTestFinder):
             """
@@ -508,11 +581,20 @@ class SphinxDoctestModule(pytest.Module):
             fix taken from https://github.com/pytest-dev/pytest/pull/4212/
             """
 
-            def _find(self, tests, obj, name, module, source_lines, globs, seen):
+            def _find(
+                self,
+                tests: List[doctest.DocTest],
+                obj: str,
+                name: str,
+                module: Any,
+                source_lines: Optional[List[str]],
+                globs: GlobDict,
+                seen: Dict[int, int],
+            ) -> None:
                 if _is_mocked(obj):
                     return
                 with _patch_unwrap_mock_aware():
-                    doctest.DocTestFinder._find(
+                    doctest.DocTestFinder._find(  # type:ignore
                         self,
                         tests,
                         obj,
@@ -524,12 +606,14 @@ class SphinxDoctestModule(pytest.Module):
                     )
 
         if sys.version_info < (3, 10):
-            finder = MockAwareDocTestFinder(parser=SphinxDocTestParser())
+            finder = MockAwareDocTestFinder(
+                parser=SphinxDocTestParser()  # type:ignore
+            )
         else:
-            finder = doctest.DocTestFinder(parser=SphinxDocTestParser())
+            finder = doctest.DocTestFinder(parser=SphinxDocTestParser())  # type:ignore
 
         runner = SphinxDocTestRunner(
-            verbose=0,
+            verbose=False,
             optionflags=optionflags,
             checker=_pytest.doctest._get_checker(),
         )
@@ -537,5 +621,8 @@ class SphinxDoctestModule(pytest.Module):
         for test in finder.find(module, module.__name__):
             if test.examples:
                 yield DoctestItem.from_parent(
-                    parent=self, name=test.name, runner=runner, dtest=test
+                    parent=self,  # type: ignore
+                    name=test.name,
+                    runner=runner,
+                    dtest=test,
                 )

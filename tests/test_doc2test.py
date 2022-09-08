@@ -9,7 +9,7 @@ from pytest_sphinx import get_sections
 
 
 @pytest.mark.parametrize("in_between_content", ["", "\nsome text\nmore text"])
-def test_simple(in_between_content):
+def test_simple(in_between_content: str) -> None:
     doc = """
 .. testcode::
 
@@ -34,7 +34,7 @@ def test_simple(in_between_content):
     assert example.lineno == 5
 
 
-def test_with_options():
+def test_with_options() -> None:
     doc = """
 .. testcode::
 
@@ -61,7 +61,7 @@ def test_with_options():
     assert example.lineno == 5
 
 
-def test_indented():
+def test_indented() -> None:
     doc = textwrap.dedent(
         """
     Examples:
@@ -87,7 +87,7 @@ def test_indented():
     assert example.lineno == 7
 
 
-def test_cartopy():
+def test_cartopy() -> None:
     rstpath = os.path.join(
         os.path.dirname(__file__), "testdata", "using_the_shapereader.rst"
     )
