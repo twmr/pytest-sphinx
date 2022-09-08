@@ -9,13 +9,9 @@ def test_syntax_error_in_module_doctest(testdir: Testdir) -> None:
         textwrap.dedent(
             """
         '''
-        .. testcode::
+        .. doctest::
 
-            3+
-
-        .. testoutput::
-
-            3
+            >>> 3+
         '''
     """
         )
@@ -33,12 +29,9 @@ def test_failing_module_doctest(testdir: Testdir) -> None:
         textwrap.dedent(
             """
         '''
-        .. testcode::
+        .. doctest::
 
-            print(2+5)
-
-        .. testoutput::
-
+            >>> print(2+5)
             3
         '''
     """
@@ -47,8 +40,9 @@ def test_failing_module_doctest(testdir: Testdir) -> None:
 
     result = testdir.runpytest("--doctest-modules")
     assert "FAILURES" in result.stdout.str()
+    print(f"result.stdout: {result.stdout}")
     result.stdout.fnmatch_lines(
-        ["002*testcode::*", "004*print(2+5)*", "*=== 1 failed in *"]
+        ["002*doctest::*", "004*print(2+5)*", "*=== 1 failed in *"]
     )
 
 
@@ -61,13 +55,10 @@ def test_failing_function_doctest(testdir: Testdir) -> None:
 
         def func():
             '''
-            .. testcode::
+            .. doctest::
 
-                print(2+5)
-
-            .. testoutput::
-
-                3
+               >>> print(2+5)
+               3
             '''
     """
         )
@@ -77,7 +68,7 @@ def test_failing_function_doctest(testdir: Testdir) -> None:
     assert "FAILURES" in result.stdout.str()
     assert "GLOBAL_VAR" not in result.stdout.str()
     result.stdout.fnmatch_lines(
-        ["006*testcode::*", "008*print(2+5)*", "*=== 1 failed in *"]
+        ["006*doctest::*", "008*print(2+5)*", "*=== 1 failed in *"]
     )
 
 
@@ -87,13 +78,10 @@ def test_working_module_doctest(testdir: Testdir) -> None:
         textwrap.dedent(
             """
         '''
-        .. testcode::
+        .. doctest::
 
-            print(2+5)
-
-        .. testoutput::
-
-            7
+           >>> print(2+5)
+           7
         '''
     """
         )
@@ -112,13 +100,10 @@ def test_working_function_doctest(testdir: Testdir) -> None:
 
         def func():
             '''
-            .. testcode::
+            .. docutils::
 
-                print(2+5)
-
-            .. testoutput::
-
-                7
+               >>> print(2+5)
+               7
             '''
     """
         )
@@ -134,10 +119,8 @@ def test_working_module_doctest_nospaces(testdir: Testdir) -> None:
         textwrap.dedent(
             """
         '''
-        .. testcode::
-            print(2+5)
-
-        .. testoutput::
+        .. docutils::
+            >>>print(2+5)
             7
         '''
     """
@@ -145,7 +128,8 @@ def test_working_module_doctest_nospaces(testdir: Testdir) -> None:
     )
 
     result = testdir.runpytest("--doctest-modules")
-    result.stdout.fnmatch_lines(["*=== 1 passed in *"])
+    result.stdout.fnmatch_lines(["* lacks blank after *"])
+    result.stdout.fnmatch_lines(["*=== 1 error in *"])
 
 
 def test_multiple_doctests_in_single_file(testdir: Testdir) -> None:
@@ -155,24 +139,18 @@ def test_multiple_doctests_in_single_file(testdir: Testdir) -> None:
             """
         def foo():
             \"\"\"
-            .. testcode::
+            .. docutils::
 
-                print('1adlfadsf')
-
-            .. testoutput::
-
+                >>> print('1adlfadsf')
                 1...
             \"\"\"
             pass
 
         def bar():
             \"\"\"
-            .. testcode::
+            .. docutils::
 
-                print('1adlfadsf')
-
-            .. testoutput::
-
+                >>> print('1adlfadsf')
                 1...
             \"\"\"
             pass
@@ -192,12 +170,9 @@ def test_indented(testdir: Testdir) -> None:
     Examples:
         some text
 
-        .. testcode::
+        .. docutils::
 
-            print("Banana")
-
-        .. testoutput::
-
+            >>> print("Banana")
             Banana
     '''
     """
@@ -215,12 +190,9 @@ def test_workaround_for_doctest_mockobj_bug(testdir: Testdir) -> None:
         textwrap.dedent(
             """
         \"\"\"
-        .. testcode::
+        .. docutils::
 
-            print("Banana")
-
-        .. testoutput::
-
+            >>> print("Banana")
             Banana
 
         \"\"\"
@@ -237,13 +209,12 @@ def test_workaround_for_doctest_mockobj_bug(testdir: Testdir) -> None:
 def test_with_conftest(testdir: Testdir) -> None:
     content = """
         \"\"\"
-        .. testcode::
 
-            print('abc')
+        .. doctest::
 
-        .. testoutput::
+           >>> print('abc')
+           abc
 
-            abc
         \"\"\"
     """
 

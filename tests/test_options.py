@@ -1,111 +1,111 @@
 import doctest
 import textwrap
 
-import pytest
 from _pytest.legacypath import Testdir
 
-from pytest_sphinx import _split_into_body_and_options
-
-
-def test_only_options_empty_body() -> None:
-    want = "\n:options: +NORMALIZE_WHITESPACE\n"
-
-    with pytest.raises(ValueError, match="no code/output"):
-        _split_into_body_and_options(want)
-
-
-def test_only_options_nonewline() -> None:
-    want = "\n:options: +NORMALIZE_WHITESPACE\ncodeblock"
-
-    with pytest.raises(ValueError, match="invalid option block"):
-        _split_into_body_and_options(want)
-
-
-def test_mulitple_options() -> None:
-    want = "\n:options: +NORMALIZE_WHITESPACE, -ELLIPSIS\n\ncodeblock"
-
-    ret = _split_into_body_and_options(want)
-    assert ret[0] == "codeblock"
-    assert ret[1] is None
-    assert ret[2] == {
-        doctest.NORMALIZE_WHITESPACE: True,
-        doctest.ELLIPSIS: False,
-    }
-
-
-def test_multiline_code() -> None:
-    want = textwrap.dedent(
-        """
-        :options: +NORMALIZE_WHITESPACE
-
-        {'a':    3,
-         'b':   44,
-         'c':   20}
-        """
-    )
-    ret = _split_into_body_and_options(want)
-    assert ret[0] == "{'a':    3,\n 'b':   44,\n 'c':   20}"
-    assert ret[1] is None
-    assert ret[2] == {
-        doctest.NORMALIZE_WHITESPACE: True,
-    }
-
-
-def test_hide() -> None:
-    # test that the hide option is ignored
-    want = textwrap.dedent(
-        """
-        :options: +NORMALIZE_WHITESPACE
-        :hide:
-
-        code
-        """
-    )
-    ret = _split_into_body_and_options(want)
-    assert ret[0] == "code"
-    assert ret[1] is None
-    assert ret[2] == {
-        doctest.NORMALIZE_WHITESPACE: True,
-    }
-
-
-def test_options_and_text() -> None:
-    want = textwrap.dedent(
-        """
-        :options: +NORMALIZE_WHITESPACE
-
-        abcedf
-        abcedf
-    """
-    )
-
-    ret = _split_into_body_and_options(want)
-    assert ret == ("abcedf\nabcedf", None, {4: True})
-
-
-@pytest.mark.parametrize("expr", ["True"])
-@pytest.mark.parametrize("with_options", [True, False])
-def test_skipif_and_text(expr: str, with_options: bool) -> None:
-    want = textwrap.dedent(
-        """
-        :skipif: {}
-
-        abcedf
-        abcedf
-    """.format(
-            expr
-        )
-    )
-    if with_options:
-        want = "\n:options: +NORMALIZE_WHITESPACE" + want
-
-    ret = _split_into_body_and_options(want)
-    assert ret[0] == "abcedf\nabcedf"
-    assert ret[1] == expr
-    if with_options:
-        assert ret[2] == {doctest.NORMALIZE_WHITESPACE: True}
-    else:
-        assert ret[2] == {}
+# import pytest
+# from pytest_sphinx import _split_into_body_and_options
+#
+#
+# def test_only_options_empty_body() -> None:
+#     want = "\n:options: +NORMALIZE_WHITESPACE\n"
+#
+#     with pytest.raises(ValueError, match="no code/output"):
+#         _split_into_body_and_options(want)
+#
+#
+# def test_only_options_nonewline() -> None:
+#     want = "\n:options: +NORMALIZE_WHITESPACE\ncodeblock"
+#
+#     with pytest.raises(ValueError, match="invalid option block"):
+#         _split_into_body_and_options(want)
+#
+#
+# def test_mulitple_options() -> None:
+#     want = "\n:options: +NORMALIZE_WHITESPACE, -ELLIPSIS\n\ncodeblock"
+#
+#     ret = _split_into_body_and_options(want)
+#     assert ret[0] == "codeblock"
+#     assert ret[1] is None
+#     assert ret[2] == {
+#         doctest.NORMALIZE_WHITESPACE: True,
+#         doctest.ELLIPSIS: False,
+#     }
+#
+#
+# def test_multiline_code() -> None:
+#     want = textwrap.dedent(
+#         """
+#         :options: +NORMALIZE_WHITESPACE
+#
+#         {'a':    3,
+#          'b':   44,
+#          'c':   20}
+#         """
+#     )
+#     ret = _split_into_body_and_options(want)
+#     assert ret[0] == "{'a':    3,\n 'b':   44,\n 'c':   20}"
+#     assert ret[1] is None
+#     assert ret[2] == {
+#         doctest.NORMALIZE_WHITESPACE: True,
+#     }
+#
+#
+# def test_hide() -> None:
+#     # test that the hide option is ignored
+#     want = textwrap.dedent(
+#         """
+#         :options: +NORMALIZE_WHITESPACE
+#         :hide:
+#
+#         code
+#         """
+#     )
+#     ret = _split_into_body_and_options(want)
+#     assert ret[0] == "code"
+#     assert ret[1] is None
+#     assert ret[2] == {
+#         doctest.NORMALIZE_WHITESPACE: True,
+#     }
+#
+#
+# def test_options_and_text() -> None:
+#     want = textwrap.dedent(
+#         """
+#         :options: +NORMALIZE_WHITESPACE
+#
+#         abcedf
+#         abcedf
+#     """
+#     )
+#
+#     ret = _split_into_body_and_options(want)
+#     assert ret == ("abcedf\nabcedf", None, {4: True})
+#
+#
+# @pytest.mark.parametrize("expr", ["True"])
+# @pytest.mark.parametrize("with_options", [True, False])
+# def test_skipif_and_text(expr: str, with_options: bool) -> None:
+#     want = textwrap.dedent(
+#         """
+#         :skipif: {}
+#
+#         abcedf
+#         abcedf
+#     """.format(
+#             expr
+#         )
+#     )
+#     if with_options:
+#         want = "\n:options: +NORMALIZE_WHITESPACE" + want
+#
+#     ret = _split_into_body_and_options(want)
+#     assert ret[0] == "abcedf\nabcedf"
+#     assert ret[1] == expr
+#     if with_options:
+#         assert ret[2] == {doctest.NORMALIZE_WHITESPACE: True}
+#     else:
+#         assert ret[2] == {}
 
 
 def test_check_output_with_whitespace_normalization() -> None:
@@ -131,19 +131,15 @@ def test_check_output_with_whitespace_normalization() -> None:
 
 
 def test_doctest_with_whitespace_normalization(testdir: Testdir) -> None:
-    testdir.maketxtfile(
+    testdir.makefile(
+        ".rst",
         test_something="""
-        .. testcode::
-
-            print("{'a': 3, 'b': 44, 'c': 20}")
-
-        .. testoutput::
+        .. doctest::
             :options: +NORMALIZE_WHITESPACE
 
-            {'a':    3,
-             'b':   44,
-             'c':   20}
-    """
+            >>> print("{'a': 3, 'b': 44, 'c': 20}")  # doctest: +NORMALIZE_WHITESPACE
+            {'a': 3, 'b': 44, 'c': 20}
+    """,
     )
 
     result = testdir.runpytest("--doctest-modules")

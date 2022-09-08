@@ -32,6 +32,7 @@ classifiers = [
 # Requirements
 dependencies = [
     "pytest >=7.0.0",
+    "docutils"
 ]
 
 [project.optional-dependencies]
@@ -40,6 +41,9 @@ lint = [
     "flake8",
     "black",
     "mypy"
+]
+myst-parser = [
+    "myst-parser"
 ]
 
 [project.urls]

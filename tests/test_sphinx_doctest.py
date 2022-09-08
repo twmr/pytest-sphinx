@@ -5,6 +5,8 @@ import subprocess
 import textwrap
 from pathlib import Path
 from typing import Iterator
+from typing import List
+from typing import Optional
 from typing import Union
 
 import pytest
@@ -37,17 +39,27 @@ class SphinxDoctestRunner:
         )
 
     def __call__(
-        self, rst_file_content: str, must_raise: bool = False, sphinxopts: None = None
+        self,
+        file_content: str,
+        must_raise: bool = False,
+        file_type: str = "rst",
+        sphinxopts: Optional[List[str]] = None,
     ) -> str:
         index_rst = self.tmp_path / "source" / "index.rst"
-        rst_file_content = textwrap.dedent(rst_file_content)
-        index_rst.write_text(rst_file_content, encoding="utf-8")
+        index_file = self.tmp_path / "source" / f"index.{file_type}"
+        file_content = textwrap.dedent(file_content)
+        index_file.write_text(file_content, encoding="utf-8")
+        if file_type == "md":  # Delete sphinx-quickstart's .rst file
+            index_rst.unlink()
         logger.info("CWD: %s", os.getcwd())
-        logger.info("content of index.rst:\n%s", rst_file_content)
+        logger.info(f"content of index.{file_type}:\n%s", file_content)
 
         cmd = ["sphinx-build", "-M", "doctest", "source", ""]
-        if sphinxopts:
-            cmd.append(sphinxopts)
+        if sphinxopts is not None:
+            if isinstance(sphinxopts, list):
+                cmd.extend(sphinxopts)
+            else:
+                cmd.append(sphinxopts)
 
         def to_str(subprocess_output: Union[str, bytes]) -> str:
             if isinstance(subprocess_output, bytes):
@@ -65,7 +77,9 @@ class SphinxDoctestRunner:
 
 
 @pytest.fixture
-def sphinx_tester(tmpdir: LocalPath) -> Iterator[SphinxDoctestRunner]:
+def sphinx_tester(
+    tmpdir: LocalPath, request: pytest.FixtureRequest
+) -> Iterator[SphinxDoctestRunner]:
     with tmpdir.as_cwd():
         yield SphinxDoctestRunner(tmpdir)
 
@@ -113,25 +127,6 @@ class TestDirectives:
         self, testdir: Testdir, sphinx_tester: SphinxDoctestRunner
     ) -> None:
         code = """
-            .. testcode::
-
-                print("msg from testcode directive")
-
-            .. testoutput::
-
-                msg from testcode directive
-            """
-
-        sphinx_output = sphinx_tester(code)
-        assert "1 items passed all tests" in sphinx_output
-
-        plugin_result = testdir.runpytest("--doctest-glob=index.rst").stdout
-        plugin_result.fnmatch_lines(["*=== 1 passed in *"])
-
-    def test_doctest(
-        self, testdir: Testdir, sphinx_tester: SphinxDoctestRunner
-    ) -> None:
-        code = """
             .. doctest::
 
                >>> print("msg from testcode directive")
@@ -142,6 +137,54 @@ class TestDirectives:
         assert "1 items passed all tests" in sphinx_output
 
         plugin_result = testdir.runpytest("--doctest-glob=index.rst").stdout
+        plugin_result.fnmatch_lines(["*=== 1 passed in *"])
+
+    @pytest.mark.parametrize(
+        "file_type,code",
+        [
+            [
+                "rst",
+                """
+            .. doctest::
+
+               >>> print("msg from testcode directive")
+               msg from testcode directive
+            """,
+            ],
+            [
+                "md",
+                """
+    ```{eval-rst}
+    .. doctest::
+
+       >>> print("msg from testcode directive")
+       msg from testcode directive
+
+    ```
+
+    """.strip(),
+            ],
+        ],
+    )
+    def test_doctest(
+        self,
+        testdir: Testdir,
+        sphinx_tester: SphinxDoctestRunner,
+        file_type: str,
+        code: str,
+    ) -> None:
+        if file_type == "md":  # Skip if no myst-parser
+            pytest.importorskip("myst_parser")
+        sphinx_output = sphinx_tester(
+            code,
+            file_type=file_type,
+            sphinxopts=None
+            if file_type == "rst"
+            else ["-D", "extensions=myst_parser,sphinx.ext.doctest"],
+        )
+        assert "1 items passed all tests" in sphinx_output
+
+        plugin_result = testdir.runpytest(f"--doctest-glob=index.{file_type}").stdout
         plugin_result.fnmatch_lines(["*=== 1 passed in *"])
 
     def test_doctest_multiple(
@@ -180,13 +223,10 @@ class TestDirectives:
         self, testdir: Testdir, sphinx_tester: SphinxDoctestRunner, testcode: str
     ) -> None:
         code = """
-            .. testcode::
-
-                {}
-
-            .. testoutput::
+            .. doctest::
                 :skipif: True
 
+                >>> {}
                 NOT EVALUATED
             """.format(
             testcode
@@ -213,14 +253,11 @@ class TestDirectives:
         self, testdir: Testdir, sphinx_tester: SphinxDoctestRunner, testcode: str
     ) -> None:
         code = """
-            .. testcode::
+            .. docutils::
+               :skipif: False
 
-                {}
-
-            .. testoutput::
-                :skipif: False
-
-                EVALUATED
+               >>> {}
+               EVALUATED
             """.format(
             testcode
         )
@@ -248,21 +285,18 @@ class TestDirectives:
         # sections. IMO this must lead to a testfailure, which is currently
         # not the case in sphinx -> Create sphinx ticket
         code = """
-            .. testcode::
-
-                raise RuntimeError
-
-            .. testoutput::
+            .. docutils::
                 :skipif: True
 
+                >>> raise RuntimeError
                 NOT EVALUATED
 
-            .. testoutput::
+            .. docutils::
                 :skipif: False
 
                 Traceback (most recent call last):
                     ...
-                {}
+                >>> {}
             """.format(
             "ValueError" if wrong_output_assertion else "RuntimeError"
         )
@@ -280,27 +314,3 @@ class TestDirectives:
         else:
             assert "1 items passed all tests" in sphinx_output
             plugin_output.fnmatch_lines(["*=== 1 passed in *"])
-
-    @pytest.mark.parametrize("testcode", ["raise RuntimeError", "pass", "print(1234)"])
-    def test_skipif_true_in_testcode(
-        self, testdir: Testdir, sphinx_tester: SphinxDoctestRunner, testcode: str
-    ) -> None:
-        code = """
-            .. testcode::
-                :skipif: True
-
-                {}
-
-            .. testoutput::
-                :skipif: False
-
-                NOT EVALUATED
-            """.format(
-            testcode
-        )
-
-        sphinx_output = sphinx_tester(code, must_raise=False)
-        assert "0 tests" in sphinx_output
-
-        plugin_output = testdir.runpytest("--doctest-glob=index.rst").stdout
-        plugin_output.fnmatch_lines(["collected 0 items"])
