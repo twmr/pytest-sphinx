@@ -59,6 +59,8 @@ _DIRECTIVES_W_SKIPIF = (
     SphinxDoctestDirectives.DOCTEST,
 )
 
+_MOCK = doctest.register_optionflag("MOCK")
+
 
 def pytest_collect_file(
     file_path: Path, parent: Union[Session, Package]
@@ -436,7 +438,10 @@ class SphinxDocTestRunner(doctest.DebugRunner):
             # If the example executed without raising any exceptions,
             # verify its output.
             if exception is None:
-                if check(example.want, got, self.optionflags):
+                # If 'MOCK' is set, then don't check the output.
+                if self.optionflags & _MOCK:
+                    outcome = SUCCESS
+                elif check(example.want, got, self.optionflags):
                     outcome = SUCCESS
 
             # The example raised an exception:  check if it was expected.
