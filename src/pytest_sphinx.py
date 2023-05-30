@@ -43,6 +43,11 @@ class SphinxDoctestDirectives(enum.Enum):
     DOCTEST = 5
 
 
+class DirectiveSyntax(enum.Enum):
+    RST = 1
+    MYST = 2
+
+
 _DIRECTIVES_W_OPTIONS = (
     SphinxDoctestDirectives.TESTOUTPUT,
     SphinxDoctestDirectives.DOCTEST,
@@ -66,7 +71,9 @@ def pytest_collect_file(
                 SphinxDoctestModule.from_parent(parent, path=file_path)
             )
             return mod
-    elif file_path.suffix in (".txt", ".rst") and parent.session.isinitpath(file_path):
+    elif file_path.suffix in (".txt", ".rst", ".md") and parent.session.isinitpath(
+        file_path
+    ):
         # file was explicitly provided on the command line
         return SphinxDoctestTextfile.from_parent(parent, path=file_path)  # type: ignore
     else:
@@ -88,7 +95,7 @@ GlobDict = dict[str, Any]
 _OPTION_DIRECTIVE_RE = re.compile(r':options:\s*([^\n\'"]*)$')
 _OPTION_SKIPIF_RE = re.compile(r':skipif:\s*([^\n\'"]*)$')
 
-_DIRECTIVE_RE = re.compile(
+_RST_DIRECTIVE_RE = re.compile(
     r"""
     \s*\.\.\s
     (?P<directive>(testcode|testoutput|testsetup|testcleanup|doctest))
@@ -98,6 +105,28 @@ _DIRECTIVE_RE = re.compile(
     """,
     re.VERBOSE,
 )
+
+_MYST_DIRECTIVE_RE = re.compile(
+    r"""
+    \s*```
+    {(?P<directive>(testcode|testoutput|testsetup|testcleanup|doctest))}
+    \s*
+    (?P<argument>([^\n'"]*))
+    $
+    """,
+    re.VERBOSE,
+)
+
+_SYNTAX_TO_DIRECTIVE_RE = {
+    DirectiveSyntax.RST: _RST_DIRECTIVE_RE,
+    DirectiveSyntax.MYST: _MYST_DIRECTIVE_RE,
+}
+
+_FILE_EXTENSION_TO_SYNTAX = {
+    ".rst": DirectiveSyntax.RST,
+    ".md": DirectiveSyntax.MYST,
+    ".py": DirectiveSyntax.RST,
+}
 
 
 def _split_into_body_and_options(
@@ -215,7 +244,7 @@ class Section:
         self.options = options
 
 
-def get_sections(docstring: str) -> list[Any | Section]:
+def get_sections(docstring: str, syntax: DirectiveSyntax) -> list[Any | Section]:
     lines = textwrap.dedent(docstring).splitlines()
     sections = []
 
@@ -241,7 +270,7 @@ def get_sections(docstring: str) -> list[Any | Section]:
         except IndexError:
             break
 
-        match = _DIRECTIVE_RE.match(line)
+        match = _SYNTAX_TO_DIRECTIVE_RE[syntax].match(line)
         if match:
             group = match.groupdict()
             directive = getattr(SphinxDoctestDirectives, group["directive"].upper())
@@ -256,7 +285,11 @@ def get_sections(docstring: str) -> list[Any | Section]:
                 except IndexError:
                     add_match(directive, i, j, groups)
                     break
-                if block_line.lstrip() and _get_indentation(block_line) <= indentation:
+                if (
+                    syntax is DirectiveSyntax.RST
+                    and block_line.lstrip()
+                    and _get_indentation(block_line) <= indentation
+                ) or (syntax is DirectiveSyntax.MYST and block_line.lstrip() == "```"):
                     add_match(directive, i, j, groups)
                     i = j - 1
                     break
@@ -265,7 +298,9 @@ def get_sections(docstring: str) -> list[Any | Section]:
 
 
 def docstring2examples(
-    docstring: str, globs: GlobDict | None = None
+    docstring: str,
+    syntax: DirectiveSyntax = DirectiveSyntax.RST,
+    globs: GlobDict | None = None,
 ) -> list[Any | doctest.Example]:
     """Parse all sphinx test directives in the docstring.
 
@@ -276,7 +311,7 @@ def docstring2examples(
     if globs is None:
         globs = {}
 
-    sections = get_sections(docstring)
+    sections = get_sections(docstring, syntax)
 
     def get_testoutput_section_data(
         section: Section,
@@ -522,6 +557,7 @@ class SphinxDoctestTextfile(pytest.Module):
         encoding = self.config.getini("doctest_encoding")
         text = self.fspath.read_text(encoding)
         name = self.fspath.basename
+        file_extension = Path(self.fspath).suffix
 
         optionflags = _pytest.doctest.get_optionflags(self.config)  # type:ignore
         runner = SphinxDocTestRunner(
@@ -530,8 +566,11 @@ class SphinxDoctestTextfile(pytest.Module):
             checker=_pytest.doctest._get_checker(),
         )
 
+        syntax = _FILE_EXTENSION_TO_SYNTAX[file_extension]
+        examples = docstring2examples(text, syntax=syntax)
+
         test = doctest.DocTest(
-            examples=docstring2examples(text),
+            examples=examples,
             globs={},
             name=name,
             filename=name,
