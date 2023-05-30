@@ -161,6 +161,41 @@ def test_no_ellipsis_in_global_optionflags(testdir: Testdir) -> None:
     )
 
 
+def test_successful_mock(testdir: Testdir) -> None:
+    testdir.maketxtfile(
+        test_something="""
+        .. testcode::
+
+            print('spam')
+
+        .. testoutput::
+            :options: +MOCK
+
+            NOT EVALUATED
+    """
+    )
+
+    result = testdir.runpytest()
+    result.stdout.fnmatch_lines(["*=== 1 passed in *"])
+
+
+def test_failing_mock(testdir: Testdir) -> None:
+    testdir.maketxtfile(
+        test_something="""
+        .. testcode::
+
+            assert False
+
+        .. testoutput::
+            :options: +MOCK
+
+            NOT EVALUATED
+    """
+    )
+
+    result = testdir.runpytest()
+    result.stdout.fnmatch_lines(["*=== 1 failed in *"])
+
 def test_skipif_non_builtin(testdir: Testdir) -> None:
     testdir.maketxtfile(
         test_something="""
