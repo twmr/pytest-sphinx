@@ -1,6 +1,6 @@
 [project]
 name = "pytest-sphinx"
-version = "0.5.0"
+version = "0.5.0-fork"
 description = "Doctest plugin for pytest with support for Sphinx-specific doctest-directives"
 readme = "README.rst"
 requires-python = ">=3.7"
