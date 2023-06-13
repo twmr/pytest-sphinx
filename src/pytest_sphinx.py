@@ -433,6 +433,10 @@ class SphinxDocTestRunner(doctest.DebugRunner):
                     else:
                         self.optionflags &= ~optionflag
 
+            # If 'SKIP' is set, then skip this example.
+            if self.optionflags & doctest.SKIP:
+                continue
+
             # Record that we started this example.
             tries += 1
             if not quiet:
@@ -467,17 +471,9 @@ class SphinxDocTestRunner(doctest.DebugRunner):
             # If the example executed without raising any exceptions,
             # verify its output.
             if exception is None:
-                # If 'SKIP' is set, run the example code but don't check the
-                # output. This is different than upstream `pytest-sphinx`, which skips
-                # the example entirely.
-                if self.optionflags & doctest.SKIP:
+                # If 'MOCK' is set, then don't check the output.
+                if self.optionflags & _MOCK:
                     outcome = SUCCESS
-
-                # 'MOCK' is deprecated in favor of 'SKIP'. Here for backwards
-                # compatibility.
-                elif self.optionflags & _MOCK:
-                    outcome = SUCCESS
-
                 elif check(example.want, got, self.optionflags):
                     outcome = SUCCESS
 
