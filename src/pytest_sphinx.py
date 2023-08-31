@@ -473,6 +473,12 @@ class SphinxDocTestRunner(doctest.DebugRunner):
                 if self.optionflags & doctest.SKIP:
                     outcome = SUCCESS
 
+                # If you don't add `testoutput`, then don't check the output. This is
+                # different than upstream `pytest-sphinx`, which checks that your code
+                # doesn't produce any output.
+                elif not example.want:
+                    outcome = SUCCESS
+
                 # 'MOCK' is deprecated in favor of 'SKIP'. Here for backwards
                 # compatibility.
                 elif self.optionflags & _MOCK:
