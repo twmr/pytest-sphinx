@@ -1,4 +1,5 @@
 """ Run tests that call "sphinx-build -M doctest". """
+
 import logging
 import os
 import subprocess

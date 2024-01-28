@@ -5,6 +5,7 @@ https://github.com/sphinx-doc/sphinx/blob/master/sphinx/ext/doctest.py
 * TODO
 ** CLEANUP: use the sphinx directive parser from the sphinx project
 """
+
 import doctest
 import enum
 import re
@@ -66,9 +67,9 @@ def pytest_collect_file(
     config = parent.config
     if file_path.suffix == ".py":
         if config.option.doctestmodules:
-            mod: Union[
-                "SphinxDoctestModule", "SphinxDoctestTextfile"
-            ] = SphinxDoctestModule.from_parent(parent, path=file_path)
+            mod: Union["SphinxDoctestModule", "SphinxDoctestTextfile"] = (
+                SphinxDoctestModule.from_parent(parent, path=file_path)
+            )
             return mod
     elif _is_doctest(config, file_path, parent):
         return SphinxDoctestTextfile.from_parent(parent, path=file_path)  # type: ignore
@@ -392,7 +393,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
             # Merge in the example's options.
             self.optionflags = original_optionflags
             if example.options:
-                for (optionflag, val) in example.options.items():
+                for optionflag, val in example.options.items():
                     if val:
                         self.optionflags |= optionflag
                     else:
