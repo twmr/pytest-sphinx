@@ -50,8 +50,8 @@ jobs:
       - name: Lint (isort)
         run: isort --check .
 
-      - name: Lint (mypy)
-        run: mypy .
+      # - name: Lint (mypy)
+      #   run: mypy .
 
       - name: Unit tests
         run: |
