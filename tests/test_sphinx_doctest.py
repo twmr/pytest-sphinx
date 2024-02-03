@@ -10,7 +10,7 @@ from typing import Union
 
 import pytest
 from _pytest.legacypath import Testdir
-from py._path.local import LocalPath
+from _pytest._py.path import LocalPath
 
 logger = logging.getLogger(__name__)
 

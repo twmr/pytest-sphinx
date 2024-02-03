@@ -529,7 +529,7 @@ class SphinxDoctestTextfile(pytest.Module):
         text = self.fspath.read_text(encoding)
         name = self.fspath.basename
 
-        optionflags = _pytest.doctest.get_optionflags(self)  # type:ignore
+        optionflags = _pytest.doctest.get_optionflags(self.config)  # type:ignore
         runner = SphinxDocTestRunner(
             verbose=False,
             optionflags=optionflags,
@@ -570,7 +570,7 @@ class SphinxDoctestModule(pytest.Module):
                     pytest.skip("unable to import module %r" % self.path)
                 else:
                     raise
-        optionflags = _pytest.doctest.get_optionflags(self)  # type:ignore
+        optionflags = _pytest.doctest.get_optionflags(self.config)  # type:ignore
 
         class MockAwareDocTestFinder(doctest.DocTestFinder):
             """
