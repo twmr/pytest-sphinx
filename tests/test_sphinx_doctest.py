@@ -9,8 +9,8 @@ from typing import Iterator
 from typing import Union
 
 import pytest
-from _pytest.legacypath import Testdir
 from _pytest._py.path import LocalPath
+from _pytest.legacypath import Testdir
 
 logger = logging.getLogger(__name__)
 
