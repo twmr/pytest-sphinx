@@ -1,9 +1,9 @@
 [project]
 name = "pytest-sphinx"
-version = "0.5.0"
+version = "0.6.0"
 description = "Doctest plugin for pytest with support for Sphinx-specific doctest-directives"
 readme = "README.rst"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 license = { file = "LICENSE" }
 keywords = ["sphinx", "pytest", "rst"]
 authors = [
@@ -20,10 +20,11 @@ classifiers = [
     "Topic :: Software Development :: Testing",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
     "Operating System :: OS Independent",
     "License :: OSI Approved :: BSD License",
@@ -31,7 +32,7 @@ classifiers = [
 
 # Requirements
 dependencies = [
-    "pytest >=7.0.0",
+    "pytest >=8.0.0",
 ]
 
 [project.optional-dependencies]
