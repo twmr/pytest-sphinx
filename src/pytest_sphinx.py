@@ -556,20 +556,13 @@ class SphinxDoctestTextfile(pytest.Module):
 
 class SphinxDoctestModule(pytest.Module):
     def collect(self) -> Iterator[_pytest.doctest.DoctestItem]:
-        if self.fspath.basename == "conftest.py":
-            module = self.config.pluginmanager._importconftest(
-                self.path,
-                self.config.getoption("importmode"),
-                rootpath=self.config.rootpath,
-            )
-        else:
-            try:
-                module = import_path(self.path, root=self.config.rootpath)
-            except ImportError:
-                if self.config.getvalue("doctest_ignore_import_errors"):
-                    pytest.skip("unable to import module %r" % self.path)
-                else:
-                    raise
+        try:
+            module = import_path(self.path, root=self.config.rootpath)
+        except ImportError:
+            if self.config.getvalue("doctest_ignore_import_errors"):
+                pytest.skip("unable to import module %r" % self.path)
+            else:
+                raise
         optionflags = _pytest.doctest.get_optionflags(self.config)  # type:ignore
 
         class MockAwareDocTestFinder(doctest.DocTestFinder):
