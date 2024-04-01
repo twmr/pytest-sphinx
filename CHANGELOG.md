@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ###
 
+## [0.6.2] - 2024-04-01
+###
+ - Adapt to incompatible `import_path` API change in pytest 8.1.1. Pytest 8.1.1 is
+   required by pytest-sphinx now.
+
 ## [0.6.1] - 2024-04-01
 ###
  - Require pytest >= 8.0 #59
