@@ -7,10 +7,10 @@ requires-python = ">=3.8"
 license = { file = "LICENSE" }
 keywords = ["sphinx", "pytest", "rst"]
 authors = [
-    { name="Thomas Hisch", email="t.hisch@gmail.com" }
+    { name="Thomas Wimmer", email="thomaswimmer@posteo.com" }
 ]
 maintainers = [
-    { name="Thomas Hisch", email="t.hisch@gmail.com" }
+    { name="Thomas Wimmer", email="thomaswimmer@posteo.com" }
 ]
 
 classifiers = [
