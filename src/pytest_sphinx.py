@@ -557,7 +557,9 @@ class SphinxDoctestTextfile(pytest.Module):
 class SphinxDoctestModule(pytest.Module):
     def collect(self) -> Iterator[_pytest.doctest.DoctestItem]:
         try:
-            module = import_path(self.path, root=self.config.rootpath)
+            module = import_path(
+                self.path, root=self.config.rootpath, consider_namespace_packages=False
+            )
         except ImportError:
             if self.config.getvalue("doctest_ignore_import_errors"):
                 pytest.skip("unable to import module %r" % self.path)
