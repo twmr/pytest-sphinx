@@ -26,8 +26,6 @@ import _pytest.doctest
 import pytest
 from _pytest.config import Config
 from _pytest.doctest import DoctestItem
-from _pytest.doctest import _is_mocked
-from _pytest.doctest import _patch_unwrap_mock_aware
 from _pytest.main import Session
 from _pytest.pathlib import import_path
 from _pytest.python import Package
@@ -570,47 +568,7 @@ class SphinxDoctestModule(pytest.Module):
                 raise
         optionflags = _pytest.doctest.get_optionflags(self.config)  # type:ignore
 
-        class MockAwareDocTestFinder(doctest.DocTestFinder):
-            """
-            a hackish doctest finder that overrides stdlib internals to fix
-            a stdlib bug
-            https://github.com/pytest-dev/pytest/issues/3456
-            https://bugs.python.org/issue25532
-
-            fix taken from https://github.com/pytest-dev/pytest/pull/4212/
-            """
-
-            def _find(
-                self,
-                tests: List[doctest.DocTest],
-                obj: str,
-                name: str,
-                module: Any,
-                source_lines: Optional[List[str]],
-                globs: GlobDict,
-                seen: Dict[int, int],
-            ) -> None:
-                if _is_mocked(obj):
-                    return
-                with _patch_unwrap_mock_aware():
-                    doctest.DocTestFinder._find(  # type:ignore
-                        self,
-                        tests,
-                        obj,
-                        name,
-                        module,
-                        source_lines,
-                        globs,
-                        seen,
-                    )
-
-        if sys.version_info < (3, 10):
-            finder = MockAwareDocTestFinder(
-                parser=SphinxDocTestParser()  # type:ignore
-            )
-        else:
-            finder = doctest.DocTestFinder(parser=SphinxDocTestParser())  # type:ignore
-
+        finder = doctest.DocTestFinder(parser=SphinxDocTestParser())  # type:ignore
         runner = SphinxDocTestRunner(
             verbose=False,
             optionflags=optionflags,
