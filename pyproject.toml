@@ -50,3 +50,8 @@ homepage = "https://github.com/thisch/pytest-sphinx"
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "sphinx>=8.1.3",
+]
