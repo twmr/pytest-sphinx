@@ -4,7 +4,6 @@ from _pytest.legacypath import Testdir
 
 
 def test_syntax_error_in_module_doctest(testdir: Testdir) -> None:
-
     testdir.makepyfile(
         textwrap.dedent(
             """
@@ -28,7 +27,6 @@ def test_syntax_error_in_module_doctest(testdir: Testdir) -> None:
 
 
 def test_failing_module_doctest(testdir: Testdir) -> None:
-
     testdir.makepyfile(
         textwrap.dedent(
             """
@@ -82,7 +80,6 @@ def test_failing_function_doctest(testdir: Testdir) -> None:
 
 
 def test_working_module_doctest(testdir: Testdir) -> None:
-
     testdir.makepyfile(
         textwrap.dedent(
             """
@@ -129,7 +126,6 @@ def test_working_function_doctest(testdir: Testdir) -> None:
 
 
 def test_working_module_doctest_nospaces(testdir: Testdir) -> None:
-
     testdir.makepyfile(
         textwrap.dedent(
             """
@@ -149,7 +145,6 @@ def test_working_module_doctest_nospaces(testdir: Testdir) -> None:
 
 
 def test_multiple_doctests_in_single_file(testdir: Testdir) -> None:
-
     testdir.makepyfile(
         textwrap.dedent(
             """

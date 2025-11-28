@@ -383,7 +383,6 @@ class SphinxDocTestRunner(doctest.DebugRunner):
 
         # Process each example.
         for examplenum, example in enumerate(test.examples):
-
             # If REPORT_ONLY_FIRST_FAILURE is set, then suppress
             # reporting after the first failure.
             quiet = (
