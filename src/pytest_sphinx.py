@@ -371,7 +371,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
 
         """
         # Keep track of the number of failures and tries.
-        failures = tries = 0
+        failures = tries = skips = 0
 
         # Save the option flags (since option directives can be used
         # to modify them).
@@ -400,6 +400,7 @@ class SphinxDocTestRunner(doctest.DebugRunner):
 
             # If 'SKIP' is set, then skip this example.
             if self.optionflags & doctest.SKIP:
+                skips += 1
                 continue
 
             # Record that we started this example.
@@ -494,7 +495,10 @@ class SphinxDocTestRunner(doctest.DebugRunner):
         self.optionflags = original_optionflags
 
         # Record and return the number of failures and tries.
-        self._DocTestRunner__record_outcome(test, failures, tries)  # type:ignore
+        if sys.version_info >= (3, 13):
+            self._DocTestRunner__record_outcome(test, failures, tries, skips)  # type:ignore
+        else:
+            self._DocTestRunner__record_outcome(test, failures, tries)  # type:ignore
         return doctest.TestResults(failures, tries)
 
 
