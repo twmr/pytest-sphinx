@@ -10,17 +10,17 @@ from pytest_sphinx import get_sections
 
 @pytest.mark.parametrize("in_between_content", ["", "\nsome text\nmore text"])
 def test_simple(in_between_content: str) -> None:
-    doc = """
+    doc = f"""
 .. testcode::
 
     import pprint
     pprint.pprint({{'3': 4, '5': 6}})
-{}
+{in_between_content}
 .. testoutput::
 
     {{'3': 4,
      '5': 6}}
-""".format(in_between_content)
+"""
 
     examples = docstring2examples(doc)
     assert len(examples) == 1

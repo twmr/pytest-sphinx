@@ -5,9 +5,8 @@ import os
 import subprocess
 import sys
 import textwrap
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
-from typing import Union
 
 import pytest
 from _pytest._py.path import LocalPath
@@ -58,7 +57,7 @@ class SphinxDoctestRunner:
         if sphinxopts:
             cmd.append(sphinxopts)
 
-        def to_str(subprocess_output: Union[str, bytes]) -> str:
+        def to_str(subprocess_output: str | bytes) -> str:
             if isinstance(subprocess_output, bytes):
                 output_str = "\n".join(subprocess_output.decode().splitlines())
             else:
@@ -187,16 +186,16 @@ class TestDirectives:
     def test_skipif_true(
         self, testdir: Testdir, sphinx_tester: SphinxDoctestRunner, testcode: str
     ) -> None:
-        code = """
+        code = f"""
             .. testcode::
 
-                {}
+                {testcode}
 
             .. testoutput::
                 :skipif: True
 
                 NOT EVALUATED
-            """.format(testcode)
+            """
 
         raise_in_testcode = testcode != "pass"
         sphinx_output = sphinx_tester(code, must_raise=raise_in_testcode)
@@ -218,16 +217,16 @@ class TestDirectives:
     def test_skipif_false(
         self, testdir: Testdir, sphinx_tester: SphinxDoctestRunner, testcode: str
     ) -> None:
-        code = """
+        code = f"""
             .. testcode::
 
-                {}
+                {testcode}
 
             .. testoutput::
                 :skipif: False
 
                 EVALUATED
-            """.format(testcode)
+            """
 
         expected_failure = "EVALUATED" not in testcode
 
@@ -287,17 +286,17 @@ class TestDirectives:
     def test_skipif_true_in_testcode(
         self, testdir: Testdir, sphinx_tester: SphinxDoctestRunner, testcode: str
     ) -> None:
-        code = """
+        code = f"""
             .. testcode::
                 :skipif: True
 
-                {}
+                {testcode}
 
             .. testoutput::
                 :skipif: False
 
                 NOT EVALUATED
-            """.format(testcode)
+            """
 
         sphinx_output = sphinx_tester(code, must_raise=False)
         assert "0 tests" in sphinx_output

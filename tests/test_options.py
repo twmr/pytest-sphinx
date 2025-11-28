@@ -87,12 +87,12 @@ def test_options_and_text() -> None:
 @pytest.mark.parametrize("with_options", [True, False])
 def test_skipif_and_text(expr: str, with_options: bool) -> None:
     want = textwrap.dedent(
-        """
-        :skipif: {}
+        f"""
+        :skipif: {expr}
 
         abcedf
         abcedf
-    """.format(expr)
+    """
     )
     if with_options:
         want = "\n:options: +NORMALIZE_WHITESPACE" + want
