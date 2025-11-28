@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ###
 
+## [0.7] - 2025-11-28
+###
+ - Drop support for python 3.8 and 3.9 and add support for 3.13 and 3.14
+ - Adapt to changes in doctest stdlib package (Fixes #67)
+
 ## [0.6.3] - 2024-04-13
 ###
  - Forgot to bump minimum required pytest version in pytest-sphinx 0.6.2 #64
