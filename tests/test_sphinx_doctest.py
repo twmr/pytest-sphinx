@@ -3,6 +3,7 @@
 import logging
 import os
 import subprocess
+import sys
 import textwrap
 from pathlib import Path
 from typing import Iterator
@@ -13,6 +14,13 @@ from _pytest._py.path import LocalPath
 from _pytest.legacypath import Testdir
 
 logger = logging.getLogger(__name__)
+
+
+def assert_1_item_passed(output):
+    if sys.version_info >= (3, 13):
+        assert "1 item passed all tests" in output
+    else:
+        assert "1 items passed all tests" in output
 
 
 class SphinxDoctestRunner:
@@ -105,7 +113,7 @@ def test_simple_doctest_success(sphinx_tester: SphinxDoctestRunner) -> None:
         6
         """
     )
-    assert "1 items passed all tests" in output
+    assert_1_item_passed(output)
 
 
 class TestDirectives:
@@ -123,7 +131,7 @@ class TestDirectives:
             """
 
         sphinx_output = sphinx_tester(code)
-        assert "1 items passed all tests" in sphinx_output
+        assert_1_item_passed(sphinx_output)
 
         plugin_result = testdir.runpytest("--doctest-glob=index.rst").stdout
         plugin_result.fnmatch_lines(["*=== 1 passed in *"])
@@ -139,7 +147,7 @@ class TestDirectives:
             """
 
         sphinx_output = sphinx_tester(code)
-        assert "1 items passed all tests" in sphinx_output
+        assert_1_item_passed(sphinx_output)
 
         plugin_result = testdir.runpytest("--doctest-glob=index.rst").stdout
         plugin_result.fnmatch_lines(["*=== 1 passed in *"])
@@ -170,7 +178,7 @@ class TestDirectives:
             """
 
         sphinx_output = sphinx_tester(code)
-        assert "1 items passed all tests" in sphinx_output
+        assert_1_item_passed(sphinx_output)
 
         plugin_result = testdir.runpytest("--doctest-glob=index.rst").stdout
         plugin_result.fnmatch_lines(["*=== 1 passed in *"])
@@ -201,7 +209,7 @@ class TestDirectives:
             assert "1 failure in tests" in sphinx_output
             plugin_output.fnmatch_lines(["*=== 1 failed in *"])
         else:
-            assert "1 items passed all tests" in sphinx_output
+            assert_1_item_passed(sphinx_output)
             plugin_output.fnmatch_lines(["*=== 1 passed in *"])
 
     @pytest.mark.parametrize(
@@ -230,7 +238,7 @@ class TestDirectives:
             assert "1 failure in tests" in sphinx_output
             plugin_output.fnmatch_lines(["*=== 1 failed in *"])
         else:
-            assert "1 items passed all tests" in sphinx_output
+            assert_1_item_passed(sphinx_output)
             plugin_output.fnmatch_lines(["*=== 1 passed in *"])
 
     @pytest.mark.parametrize("wrong_output_assertion", [True, False])
@@ -272,7 +280,7 @@ class TestDirectives:
             assert "1 failure in tests" in sphinx_output
             plugin_output.fnmatch_lines(["*=== 1 failed in *"])
         else:
-            assert "1 items passed all tests" in sphinx_output
+            assert_1_item_passed(sphinx_output)
             plugin_output.fnmatch_lines(["*=== 1 passed in *"])
 
     @pytest.mark.parametrize("testcode", ["raise RuntimeError", "pass", "print(1234)"])
