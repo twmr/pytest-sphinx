@@ -41,17 +41,11 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --upgrade tox
 
-      - name: Lint (flake8)
-        run: flake8
+      - name: Ruff format
+        run: ruff format .
 
-      - name: Lint (black)
-        run: black --check .
-
-      - name: Lint (isort)
-        run: isort --check .
-
-      # - name: Lint (mypy)
-      #   run: mypy .
+      - name: Ruff format
+        run: ruff check .
 
       - name: Unit tests
         run: |

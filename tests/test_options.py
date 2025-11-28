@@ -92,9 +92,7 @@ def test_skipif_and_text(expr: str, with_options: bool) -> None:
 
         abcedf
         abcedf
-    """.format(
-            expr
-        )
+    """.format(expr)
     )
     if with_options:
         want = "\n:options: +NORMALIZE_WHITESPACE" + want

@@ -38,10 +38,7 @@ dependencies = [
 
 [project.optional-dependencies]
 lint = [
-    "isort >= 5",
-    "flake8",
-    "black",
-    "mypy"
+    "ruff",
 ]
 
 [project.urls]
@@ -49,13 +46,6 @@ homepage = "https://github.com/thisch/pytest-sphinx"
 
 [project.entry-points."pytest11"]
 "sphinx" = "pytest_sphinx"
-
-[tool.isort]
-profile = "black"
-
-[tool.mypy]
-strict = true
-warn_unused_ignores = false  # mypy#8823
 
 [build-system]
 requires = ["setuptools"]

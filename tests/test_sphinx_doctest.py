@@ -1,4 +1,4 @@
-""" Run tests that call "sphinx-build -M doctest". """
+"""Run tests that call "sphinx-build -M doctest"."""
 
 import logging
 import os
@@ -72,7 +72,6 @@ def sphinx_tester(tmpdir: LocalPath) -> Iterator[SphinxDoctestRunner]:
 
 
 def test_simple_doctest_failure(sphinx_tester: SphinxDoctestRunner) -> None:
-
     output = sphinx_tester(
         """
         ===!!!
@@ -189,9 +188,7 @@ class TestDirectives:
                 :skipif: True
 
                 NOT EVALUATED
-            """.format(
-            testcode
-        )
+            """.format(testcode)
 
         raise_in_testcode = testcode != "pass"
         sphinx_output = sphinx_tester(code, must_raise=raise_in_testcode)
@@ -222,9 +219,7 @@ class TestDirectives:
                 :skipif: False
 
                 EVALUATED
-            """.format(
-            testcode
-        )
+            """.format(testcode)
 
         expected_failure = "EVALUATED" not in testcode
 
@@ -264,9 +259,7 @@ class TestDirectives:
                 Traceback (most recent call last):
                     ...
                 {}
-            """.format(
-            "ValueError" if wrong_output_assertion else "RuntimeError"
-        )
+            """.format("ValueError" if wrong_output_assertion else "RuntimeError")
 
         # -> ignore all skipped testoutput sections, but use the one that is
         # -> not skipped
@@ -296,9 +289,7 @@ class TestDirectives:
                 :skipif: False
 
                 NOT EVALUATED
-            """.format(
-            testcode
-        )
+            """.format(testcode)
 
         sphinx_output = sphinx_tester(code, must_raise=False)
         assert "0 tests" in sphinx_output

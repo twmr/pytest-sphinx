@@ -20,9 +20,7 @@ def test_simple(in_between_content: str) -> None:
 
     {{'3': 4,
      '5': 6}}
-""".format(
-        in_between_content
-    )
+""".format(in_between_content)
 
     examples = docstring2examples(doc)
     assert len(examples) == 1
