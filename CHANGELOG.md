@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 ###
 
+## [0.7.1] - 2026-01-21
+###
+ - Fixed pypi upload issue
+
 ## [0.7] - 2025-11-28
 ###
  - Drop support for python 3.8 and 3.9 and add support for 3.13 and 3.14
