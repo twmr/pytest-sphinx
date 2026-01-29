@@ -6,8 +6,8 @@ import pytest_sphinx
 
 
 def test_collect_testtextfile(pytester: Pytester) -> None:
-    w = pytester.maketxtfile(whatever="")
-    checkfile = pytester.maketxtfile(
+    empty_txt_file = pytester.maketxtfile(whatever="")
+    dot_txt_file = pytester.maketxtfile(
         test_something="""
         alskdjalsdk
 
@@ -21,13 +21,46 @@ def test_collect_testtextfile(pytester: Pytester) -> None:
     """
     )
 
-    for x in (pytester.path, checkfile):
+    dot_rst_file = pytester.makefile(
+        ".rst",
+        test_something="""
+        alskdjalsdk
+
+        .. testcode::
+
+            print(2+3)
+
+        .. testoutput::
+
+            5
+    """,
+    )
+
+    dot_md_file = pytester.makefile(
+        ".md",
+        test_something="""
+        ```{doctest} My example
+        >>> 2 + 3
+        5
+        ```
+    """,
+    )
+
+    for x in (pytester.path, dot_txt_file, dot_rst_file):
+        # run --collect-only in-process
         items, reprec = pytester.inline_genitems(x)
+
         assert len(items) == 1
         assert isinstance(items[0], _pytest.doctest.DoctestItem)
         assert isinstance(items[0].parent, pytest_sphinx.SphinxDoctestTextfile)
+
     # Empty file has no items.
-    items, reprec = pytester.inline_genitems(w)
+    items, reprec = pytester.inline_genitems(empty_txt_file)
+    assert not items
+
+    # the md file is not collected even if you explicitly pass the md file to pytest,
+    # because it markdown files are not yet supported.
+    items, reprec = pytester.inline_genitems(dot_md_file)
     assert not items
 
 
