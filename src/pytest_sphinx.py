@@ -123,6 +123,7 @@ _SYNTAX_TO_DIRECTIVE_RE = {
 }
 
 _FILE_EXTENSION_TO_SYNTAX = {
+    ".txt": DirectiveSyntax.RST,
     ".rst": DirectiveSyntax.RST,
     ".md": DirectiveSyntax.MYST,
     ".py": DirectiveSyntax.RST,

@@ -4,6 +4,7 @@ import textwrap
 
 import pytest
 
+from pytest_sphinx import DirectiveSyntax
 from pytest_sphinx import docstring2examples
 from pytest_sphinx import get_sections
 
@@ -90,7 +91,7 @@ def test_cartopy() -> None:
         os.path.dirname(__file__), "testdata", "using_the_shapereader.rst"
     )
     with open(rstpath) as fh:
-        sections = get_sections(fh.read())
+        sections = get_sections(fh.read(), syntax=DirectiveSyntax.RST)
 
     assert len(sections) == 9
     assert sections[0].groups == ["countries"]
