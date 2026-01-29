@@ -22,7 +22,6 @@ from typing import Any
 
 import _pytest.doctest
 import pytest
-from _pytest.config import Config
 from _pytest.doctest import DoctestItem
 from _pytest.main import Session
 from _pytest.pathlib import import_path
@@ -67,23 +66,20 @@ def pytest_collect_file(
                 SphinxDoctestModule.from_parent(parent, path=file_path)
             )
             return mod
-    elif _is_doctest(config, file_path, parent):
+    elif file_path.suffix in (".txt", ".rst") and parent.session.isinitpath(file_path):
+        # file was explicitly provided on the command line
         return SphinxDoctestTextfile.from_parent(parent, path=file_path)  # type: ignore
+    else:
+        # the option is defined by pytest (see doctest module)
+        globs = config.getoption("doctestglob") or ["test*.txt"]
+        assert isinstance(globs, list)
+        for glob in globs:
+            if file_path.match(path_pattern=glob):
+                return SphinxDoctestTextfile.from_parent(parent, path=file_path)  # type: ignore
     return None
 
 
 GlobDict = dict[str, Any]
-
-
-def _is_doctest(config: Config, path: Path, parent: Session | Package) -> bool:
-    if path.suffix in (".txt", ".rst") and parent.session.isinitpath(path):
-        return True
-    globs = config.getoption("doctestglob") or ["test*.txt"]
-    assert isinstance(globs, list)
-    for glob in globs:
-        if path.match(path_pattern=glob):
-            return True
-    return False
 
 
 # This regular expression looks for option directives in the expected output
